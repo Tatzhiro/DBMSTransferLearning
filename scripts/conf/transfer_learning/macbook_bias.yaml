@@ -1,0 +1,44 @@
+models:  
+  proposed:
+    name: "Shift Learned from Linearly Related Prameters"
+    pipeline:
+      _target_: regression.LinearShift
+      workload: "a"
+      system:
+        _target_: regression.LineairDBConfiguration
+      base_data_path: "result/mac/8c12g-result.csv"
+      ref_data_path: "result/mac/4c6g-result.csv"
+      target_data_path: "result/24c32g-result.csv"
+      regression_data_threshold: 40
+      regression_rate: 1 
+  model_shift:
+    name: "Model Shift"
+    pipeline:
+      _target_: regression.ModelShift
+      workload: "a"
+      system:
+        _target_: regression.LineairDBConfiguration
+      base_data_path: "result/mac/8c12g-result.csv"
+      target_data_path: "result/24c32g-result.csv"
+  data_reuse:
+    name: "Source Model"
+    pipeline:
+      _target_: regression.DataReuse
+      workload: "a"
+      system:
+        _target_: regression.LineairDBConfiguration
+      base_data_path: "result/mac/8c12g-result.csv"
+      target_data_path: "result/24c32g-result.csv"
+      no_sample: True
+
+sizes: [0, 5, 10, 15, 20, 25, 30, 35, 40]
+
+num_trial: 5
+
+plot_design:
+  _target_: regression.PlotDesign
+  x_label: "Target Data Sample Size"
+  y_label: "Mean Absolute Percentage Error"
+
+plot_function: 
+  _target_: regression.plot_linegraph_from_df

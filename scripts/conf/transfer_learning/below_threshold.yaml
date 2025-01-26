@@ -1,0 +1,70 @@
+models:  
+  # proposed:
+  #   name: "Proposed Method"
+  #   pipeline:
+  #     _target_: regression.Proposed
+  #     workload: "a"
+  #     system:
+  #       _target_: regression.LineairDBConfiguration
+  #     base_data_path: "result/mac/8c12g-result.csv"
+  #     ref_data_path: "result/mac/4c6g-result.csv"
+  #     target_data_path: "result/24c32g-result.csv"
+  # model_shift:
+  #   name: "Model Shift"
+  #   pipeline:
+  #     _target_: regression.ModelShift
+  #     workload: "a"
+  #     system:
+  #       _target_: regression.LineairDBConfiguration
+  #     base_data_path: "result/mac/8c12g-result.csv"
+  #     target_data_path: "result/24c32g-result.csv"
+  # l2s:
+  #   name: "L2S"
+  #   pipeline:
+  #     _target_: regression.L2S
+  #     workload: "a"
+  #     system:
+  #       _target_: regression.LineairDBConfiguration
+  #     base_data_path: "result/mac/8c12g-result.csv"
+  #     target_data_path: "result/24c32g-result.csv"  
+  # data_reuse:
+  #   name: "Data Reuse"
+  #   pipeline:
+  #     _target_: regression.DataReuse
+  #     workload: "a"
+  #     system:
+  #       _target_: regression.LineairDBConfiguration
+  #     base_data_path: "result/mac/8c12g-result.csv"
+  #     target_data_path: "result/24c32g-result.csv"
+  # l2s_data_reuse:
+  #   name: "L2S Data Reuse"
+  #   pipeline:
+  #     _target_: regression.L2SDataReuse
+  #     workload: "a"
+  #     system:
+  #       _target_: regression.LineairDBConfiguration
+  #     base_data_path: "result/mac/8c12g-result.csv"
+  #     target_data_path: "result/24c32g-result.csv"
+  vanilla:
+    name: "Baseline"
+    pipeline:
+      _target_: regression.Vanilla
+      workload: "a"
+      system:
+        _target_: regression.LineairDBConfiguration
+      base_data_path: "result/mac/8c12g-result.csv"
+      target_data_path: "result/24c32g-result.csv"
+
+sizes: [300, 310, 320, 330, 340, 350]
+
+num_trial: 5
+
+plot_design:
+  _target_: regression.PlotDesign
+  x_label: "MAPE Standard Deviation (%)"
+  y_label: "Target Data Sample Size"
+  figsize: [9, 6.3]
+  marker_size: 6
+
+plot_function: 
+  _target_: regression.plot_linegraph_from_df

@@ -1,0 +1,3 @@
+[submodule "docker/lineairdb/env/LineairDB"]
+	path = docker/lineairdb/env/LineairDB
+	url = https://github.com/LineairDB/LineairDB.git

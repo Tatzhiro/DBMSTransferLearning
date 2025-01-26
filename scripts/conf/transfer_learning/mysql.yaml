@@ -1,0 +1,59 @@
+models:  
+  proposed:
+    name: "Proposed Method"
+    pipeline:
+      _target_: regression.Proposed
+      workload: "oltp_read_write"
+      system:
+        _target_: regression.MySQLConfiguration
+      base_data_path: "result/mysql-64table-1Mrec-4client/8c12g-result.csv"
+      ref_data_path: "result/mysql-64table-1Mrec-4client/4c6g-result.csv"
+      target_data_path: "result/mysql-64table-1Mrec-4client/24c32g-result.csv"
+  model_shift:
+    name: "Model Shift"
+    pipeline:
+      _target_: regression.ModelShift
+      workload: "oltp_read_write"
+      system:
+        _target_: regression.MySQLConfiguration
+      base_data_path: "result/mysql-64table-1Mrec-4client/8c12g-result.csv"
+      target_data_path: "result/mysql-64table-1Mrec-4client/24c32g-result.csv"
+  l2s:
+    name: "L2S"
+    pipeline:
+      _target_: regression.L2S
+      workload: "oltp_read_write"
+      system:
+        _target_: regression.MySQLConfiguration
+      base_data_path: "result/mysql-64table-1Mrec-4client/8c12g-result.csv"
+      target_data_path: "result/mysql-64table-1Mrec-4client/24c32g-result.csv"  
+  data_reuse:
+    name: "Data Reuse"
+    pipeline:
+      _target_: regression.DataReuse
+      workload: "oltp_read_write"
+      system:
+        _target_: regression.MySQLConfiguration
+      base_data_path: "result/mysql-64table-1Mrec-4client/8c12g-result.csv"
+      target_data_path: "result/mysql-64table-1Mrec-4client/24c32g-result.csv"
+  l2s_data_reuse:
+    name: "L2S Data Reuse"
+    pipeline:
+      _target_: regression.L2SDataReuse
+      workload: "oltp_read_write"
+      system:
+        _target_: regression.MySQLConfiguration
+      base_data_path: "result/mysql-64table-1Mrec-4client/8c12g-result.csv"
+      target_data_path: "result/mysql-64table-1Mrec-4client/24c32g-result.csv"
+
+sizes: [5, 10, 15, 20]
+
+num_trial: 5
+
+plot_design:
+  _target_: regression.PlotDesign
+  x_label: "Target Data Sample Size"
+  y_label: "Mean Absolute Percentage Error"
+
+plot_function: 
+  _target_: regression.plot_linegraph_from_df

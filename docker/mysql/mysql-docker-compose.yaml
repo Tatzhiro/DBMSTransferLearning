@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:8.0.35
+    container_name: mysql_container
+    command: 
+      - --innodb_adaptive_hash_index=ON
+      - --innodb_buffer_pool_instances=1 # innodb_buffer_pool_size has to be greater than 1GB to set this parameter
+      - --innodb_buffer_pool_size=1GB
+      - --innodb_change_buffer_max_size=25
+      - --innodb_flush_log_at_trx_commit=1
+      - --innodb_io_capacity=100
+      - --innodb_log_file_size=48MB
+      - --innodb_lru_scan_depth=1024
+      - --innodb_read_io_threads=2
+      - --innodb_write_io_threads=2
+      - --sync_binlog=1
+      - --table_open_cache=4000
+
+      # - --binlog_format=ROW # deprecated
+      - --binlog_row_image=full
+      - --binlog_transaction_compression=OFF
+      # - --rpl_semi_sync_slave_enabled=OFF # Unknown system variable 'rpl_semi_sync_slave_enabled'
+      - --slave_parallel_type=LOGICAL_CLOCK
+      - --slave_parallel_workers=4
+    privileged: true
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=1
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 12gb

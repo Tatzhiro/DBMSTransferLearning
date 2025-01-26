@@ -1,0 +1,11 @@
+datadir: ["result/mysql-64table-1Mrec-4client", "result/2-semi-sync-tbl-size-1m"]
+systems:
+  [
+    _target_: regression.MySQLConfiguration,
+    _target_: regression.MySQLReplicationConfiguration
+  ]
+
+feature_selector:
+  _target_: regression.L2SFeatureSelector
+
+workload: "oltp_read_write"

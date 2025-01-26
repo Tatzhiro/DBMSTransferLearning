@@ -1,0 +1,48 @@
+models: 
+  multi_linear_regression:
+    name: "Multivariate Linear Regression"
+    pipeline:
+      _target_: regression.MultivariateRegressionPipeline
+      data_loader:
+        _target_: regression.MultivariateDataLoader
+        workload: "a"
+        system:
+          _target_: regression.LineairDBConfiguration
+        feature_selector:
+          _target_: regression.L2SFeatureSelector
+        normalize: True
+      model: 
+        _target_: regression.LinearRegression
+      feature_engineer:
+        _target_: regression.LogCoreDistanceEngineer
+      select_features: True
+      
+  simple_linear_regression:
+    name: "Simple Linear Regression"
+    pipeline:
+      _target_: regression.SimpleRegressionPipeline
+      data_loader:
+        _target_: regression.SimpleRegressionDataLoader
+        workload: "a"
+        system:
+          _target_: regression.LineairDBConfiguration
+        feature_selector:
+          _target_: regression.L2SFeatureSelector
+        normalize: True
+      model: 
+        _target_: regression.LinearRegression
+      select_features: True
+
+data:
+  train: ["result/4c6g-result.csv", "result/8c12g-result.csv"]
+  target: "result/24c32g-result.csv"
+
+sizes: [1, 5, 10, 15]
+
+plot_design:
+  _target_: regression.PlotDesign
+  x_label: "Target Data Sample Size"
+  y_label: "Mean Absolute Percentage Error"
+
+plot_function: 
+  _target_: regression.plot_linegraph_from_df

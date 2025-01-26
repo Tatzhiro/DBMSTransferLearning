@@ -1,0 +1,19 @@
+workload: "oltp_read_write"
+feature_selector:
+  _target_: regression.LassoFeatureSelector
+  
+datadir: ["result/mysql-64table-1Mrec-4client", "result/2-semi-sync-tbl-size-1m"]
+systems:
+  [
+    _target_: regression.MySQLConfiguration,
+    _target_: regression.MySQLReplicationConfiguration
+  ]
+
+axis_label:
+  _target_: regression.machine_datasize_axis_label
+
+plot_design:
+  _target_: regression.PlotDesign
+
+plot_function: 
+  _target_: regression.scatterplot_from_df

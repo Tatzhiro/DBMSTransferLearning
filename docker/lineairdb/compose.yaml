@@ -1,0 +1,76 @@
+version: '3'
+
+services:
+  4c6g:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: 4c6g
+    privileged: true
+    volumes:
+      - ./env:/home
+    command: /sbin/init
+    platform: linux/amd64
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 6gb
+  8c12g:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: 8c12g
+    privileged: true
+    volumes:
+      - ./env:/home
+    command: /sbin/init
+    platform: linux/amd64
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 12gb
+  12c16g:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: 12c16g
+    privileged: true
+    volumes:
+      - ./env:/home
+    command: /sbin/init
+    deploy:
+      resources:
+        limits:
+          cpus: '12'
+          memory: 16gb
+  16c24g:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: 16c24g
+    privileged: true
+    volumes:
+      - ./env:/home
+    command: /sbin/init
+    platform: linux/amd64
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 24gb
+  24c32g:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: 24c32g
+    privileged: true
+    volumes:
+      - ./env:/home
+    command: /sbin/init
+    deploy:
+      resources:
+        limits:
+          cpus: '24'
+          memory: 32gb

@@ -1,0 +1,40 @@
+evaluations:
+  cv:
+    line_plot:
+      function:
+        _target_: regression.plot_linegraph_from_df
+      design:
+        _target_: regression.PlotDesign
+        x_label: "Target Data Sample Size"
+        y_label: "Mean Absolute Percentage Error"
+
+  parameter_space:
+    line_plot:
+      function:
+        _target_: regression.plot_linegraph_from_df
+      design:
+        _target_: regression.PlotDesign
+        x_label: "Parameter Space"
+        y_label: "Throughput"
+        draw_x_ticks: False
+        x_tick_fontsize: 12
+        x_tick_rotation: 90
+
+  transfer_learning:
+    line_plot:
+      function:
+        _target_: regression.plot_linegraph_from_df
+      design:
+        _target_: regression.PlotDesign
+        x_label: "Target Data Sample Size"
+        y_label: "Mean Absolute Percentage Error (%)"
+        marker_size: 6
+        figsize: [9, 6.5]
+    bar_plot:
+      function:
+        _target_: regression.plot_bargraph
+      design:
+        _target_: regression.PlotDesign
+        x_label: "Mean Absolute Percentage Error (%)"
+        y_label: "Sample Size"
+        figsize: [6.4, 4.8]

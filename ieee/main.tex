@@ -1,0 +1,113 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{subfig}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{ChimeraTL: Transfer Learning in DBMS\\with Fewer Samples\\
+\thanks{NEDO and Kakenhi}
+}
+
+\makeatletter
+\newcommand{\linebreakand}{%
+  \end{@IEEEauthorhalign}
+  \hfill\mbox{}\par
+  \mbox{}\hfill\begin{@IEEEauthorhalign}
+}
+\makeatother
+
+\author{\IEEEauthorblockN{Tatsuhiro Nakamori}
+\IEEEauthorblockA{
+    % \textit{Faculty of Media and Governance} \\
+    \textit{Keio University}\\
+    % Tokyo, Japan \\
+    tatsuhironm@keio.jp
+}
+\and
+\IEEEauthorblockN{Shohei Matsuura}
+\IEEEauthorblockA{
+    \textit{LY Corporation} \\
+    % Tokyo, Japan \\
+    shmatsuu@yahoo-corp.jp
+}
+\and
+\IEEEauthorblockN{Takashi Miyazaki}
+\IEEEauthorblockA{
+    \textit{LY Corporation} \\
+    % Tokyo, Japan \\
+    takmiyaz@yahoo-corp.jp
+}
+\and
+\IEEEauthorblockN{Sho Nakazono}
+\IEEEauthorblockA{
+    \textit{LY Corporation} \\
+    % Tokyo, Japan \\
+    shnakazo@yahoo-corp.jp
+}
+\linebreakand
+\IEEEauthorblockN{Taiki Sato}
+\IEEEauthorblockA{
+    \textit{LY Corporation} \\
+    % Tokyo, Japan \\
+    taisato@yahoo-corp.jp
+}
+\and
+\IEEEauthorblockN{Takashi Hoshino}
+\IEEEauthorblockA{
+    \textit{Cybozu Labs, Inc.} \\
+    % Tokyo, Japan \\
+    hoshino@labs.cybozu.co.jp
+}
+\and
+\IEEEauthorblockN{Hideyuki Kawashima}
+\IEEEauthorblockA{
+    % \textit{Faculty of Environment}\\
+    % \textit{and Information Studies} \\
+    \textit{Keio University}\\
+    % Tokyo, Japan \\
+    river@sfc.keio.ac.jp
+}
+
+}
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\begin{IEEEkeywords}
+component, formatting, style, styling, insert
+\end{IEEEkeywords}
+
+\input{src/1-intro}
+\input{src/2-prelim}
+\input{src/3-chimera}
+\input{src/4-eval}
+\input{src/5-related}
+\input{src/6-conclusion}
+
+\section*{Acknowledgment}
+
+The preferred spelling of the word ``acknowledgment'' in America is without 
+an ``e'' after the ``g''. Avoid the stilted expression ``one of us (R. B. 
+G.) thanks $\ldots$''. Instead, try ``R. B. G. thanks$\ldots$''. Put sponsor 
+acknowledgments in the unnumbered footnote on the first page.
+
+\bibliographystyle{IEEEtran}
+\bibliography{src/refer}
+
+% \vspace{12pt}
+% \color{red}
+% IEEE conference templates contain guidance text for composing and formatting conference papers. Please ensure that all template text is removed from your conference paper prior to submission to the conference. Failure to remove the template text from your paper may result in your paper not being published.
+
+\end{document}

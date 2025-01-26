@@ -1,0 +1,22 @@
+workload: "oltp_read_write"
+system:
+  _target_: regression.MySQLReplicationConfiguration
+data_path: "result/2-semi-sync-tbl-size-1m"
+
+parameters: ["innodb_buffer_pool_size", "innodb_read_io_threads", "innodb_write_io_threads", 
+             "innodb_flush_log_at_trx_commit", "innodb_adaptive_hash_index", "sync_binlog",
+             "innodb_lru_scan_depth", "innodb_buffer_pool_instances", "innodb_change_buffer_max_size",
+             "innodb_io_capacity", "innodb_log_file_size", "table_open_cache"]
+
+all_parameters: False
+
+plot_design:
+  _target_: regression.PlotDesign
+  x_label: "Parameter Space"
+  y_label: "Throughput"
+  draw_x_ticks: True
+  x_tick_fontsize: 12
+  x_tick_rotation: 90
+
+plot_function: 
+  _target_: regression.plot_linegraph_from_df

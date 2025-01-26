@@ -1,0 +1,53 @@
+models:
+  multi_linear_regression:
+    name: "Multivariate Linear Regression"
+    pipeline:
+      _target_: regression.MultivariateRegressionPipeline
+      data_loader:
+        _target_: regression.MultivariateDataLoader
+        workload: "a"
+        system:
+          _target_: regression.LineairDBConfiguration
+        feature_selector:
+          _target_: regression.L2SFeatureSelector
+        normalize: False
+      model: 
+        _target_: regression.LinearRegression
+      feature_engineer:
+        _target_: regression.LogCoreDistanceEngineer
+      select_features: False
+
+  gaussian_process_rbf:
+    name: "Gaussian Process RBF Kernel"
+    pipeline:
+      _target_: regression.MultivariateRegressionPipeline
+      data_loader:
+        _target_: regression.MultivariateDataLoader
+        workload: "a"
+        system:
+          _target_: regression.LineairDBConfiguration
+        feature_selector:
+          _target_: regression.L2SFeatureSelector
+        normalize: False
+      model: 
+        _target_: regression.GaussianProcessRegressor
+        kernel:
+          _target_: sklearn.gaussian_process.kernels.Sum
+          k1:
+            _target_: sklearn.gaussian_process.kernels.Product
+            k1:
+              _target_: sklearn.gaussian_process.kernels.ConstantKernel
+              constant_value: 1.0
+            k2:
+              _target_: sklearn.gaussian_process.kernels.RBF
+          k2:
+              _target_: sklearn.gaussian_process.kernels.WhiteKernel
+      feature_engineer:
+        _target_: regression.LogCoreDistanceEngineer
+      select_features: False
+
+data:
+  train: ["result/4c6g-result.csv", "result/8c12g-result.csv"]
+  target: "result/24c32g-result.csv"
+
+sizes: [1, 5, 10, 15]

@@ -1,0 +1,888 @@
+ Network lineairdb_default  Creating
+ Network lineairdb_default  Created
+ Container 8c12g  Creating
+ Container 8c12g  Created
+ Container 8c12g  Starting
+ Container 8c12g  Started
+Repository: https://github.com/LineairDB/LineairDB.git
+Server: 8c12g build
+File lineairdb/build/bench/ycsb does not exist.
+Loaded plugins: fastestmirror, ovl
+Determining fastest mirrors
+ * base: ftp.tsukuba.wide.ad.jp
+ * extras: ftp.tsukuba.wide.ad.jp
+ * updates: ftp.tsukuba.wide.ad.jp
+Resolving Dependencies
+--> Running transaction check
+---> Package epel-release.noarch 0:7-11 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                Arch             Version         Repository        Size
+================================================================================
+Installing:
+ epel-release           noarch           7-11            extras            15 k
+
+Transaction Summary
+================================================================================
+Install  1 Package
+
+Total download size: 15 k
+Installed size: 24 k
+Downloading packages:
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : epel-release-7-11.noarch                                     1/1 
+  Verifying  : epel-release-7-11.noarch                                     1/1 
+
+Installed:
+  epel-release.noarch 0:7-11                                                    
+
+Complete!
+Loaded plugins: fastestmirror, ovl
+Loading mirror speeds from cached hostfile
+ * base: ftp.tsukuba.wide.ad.jp
+ * epel: ftp.iij.ad.jp
+ * extras: ftp.tsukuba.wide.ad.jp
+ * updates: ftp.tsukuba.wide.ad.jp
+Package git-1.8.3.1-25.el7_9.x86_64 already installed and latest version
+Resolving Dependencies
+--> Running transaction check
+---> Package cmake3.x86_64 0:3.17.5-1.el7 will be installed
+--> Processing Dependency: cmake3-data = 3.17.5-1.el7 for package: cmake3-3.17.5-1.el7.x86_64
+--> Processing Dependency: librhash.so.0()(64bit) for package: cmake3-3.17.5-1.el7.x86_64
+--> Processing Dependency: libuv.so.1()(64bit) for package: cmake3-3.17.5-1.el7.x86_64
+--> Processing Dependency: libzstd.so.1()(64bit) for package: cmake3-3.17.5-1.el7.x86_64
+---> Package gcc-c++.x86_64 0:4.8.5-44.el7 will be installed
+--> Processing Dependency: libstdc++-devel = 4.8.5-44.el7 for package: gcc-c++-4.8.5-44.el7.x86_64
+--> Processing Dependency: gcc = 4.8.5-44.el7 for package: gcc-c++-4.8.5-44.el7.x86_64
+--> Processing Dependency: libmpfr.so.4()(64bit) for package: gcc-c++-4.8.5-44.el7.x86_64
+--> Processing Dependency: libmpc.so.3()(64bit) for package: gcc-c++-4.8.5-44.el7.x86_64
+---> Package jq.x86_64 0:1.6-2.el7 will be installed
+--> Processing Dependency: libonig.so.5()(64bit) for package: jq-1.6-2.el7.x86_64
+---> Package libatomic.x86_64 0:4.8.5-44.el7 will be installed
+---> Package libstdc++-static.x86_64 0:4.8.5-44.el7 will be installed
+---> Package make.x86_64 1:3.82-24.el7 will be installed
+---> Package numactl-devel.x86_64 0:2.0.12-5.el7 will be installed
+--> Processing Dependency: numactl-libs = 2.0.12-5.el7 for package: numactl-devel-2.0.12-5.el7.x86_64
+--> Processing Dependency: libnuma.so.1()(64bit) for package: numactl-devel-2.0.12-5.el7.x86_64
+--> Running transaction check
+---> Package cmake3-data.noarch 0:3.17.5-1.el7 will be installed
+--> Processing Dependency: emacs-filesystem >= 24.3 for package: cmake3-data-3.17.5-1.el7.noarch
+--> Processing Dependency: /usr/bin/python3 for package: cmake3-data-3.17.5-1.el7.noarch
+---> Package gcc.x86_64 0:4.8.5-44.el7 will be installed
+--> Processing Dependency: libgomp = 4.8.5-44.el7 for package: gcc-4.8.5-44.el7.x86_64
+--> Processing Dependency: cpp = 4.8.5-44.el7 for package: gcc-4.8.5-44.el7.x86_64
+--> Processing Dependency: glibc-devel >= 2.2.90-12 for package: gcc-4.8.5-44.el7.x86_64
+--> Processing Dependency: libgomp.so.1()(64bit) for package: gcc-4.8.5-44.el7.x86_64
+---> Package libmpc.x86_64 0:1.0.1-3.el7 will be installed
+---> Package libstdc++-devel.x86_64 0:4.8.5-44.el7 will be installed
+---> Package libuv.x86_64 1:1.44.2-1.el7 will be installed
+---> Package libzstd.x86_64 0:1.5.5-1.el7 will be installed
+---> Package mpfr.x86_64 0:3.1.1-4.el7 will be installed
+---> Package numactl-libs.x86_64 0:2.0.12-5.el7 will be installed
+---> Package oniguruma.x86_64 0:6.8.2-2.el7 will be installed
+---> Package rhash.x86_64 0:1.3.4-2.el7 will be installed
+--> Running transaction check
+---> Package cpp.x86_64 0:4.8.5-44.el7 will be installed
+---> Package emacs-filesystem.noarch 1:24.3-23.el7_9.1 will be installed
+---> Package glibc-devel.x86_64 0:2.17-326.el7_9 will be installed
+--> Processing Dependency: glibc-headers = 2.17-326.el7_9 for package: glibc-devel-2.17-326.el7_9.x86_64
+--> Processing Dependency: glibc-headers for package: glibc-devel-2.17-326.el7_9.x86_64
+---> Package libgomp.x86_64 0:4.8.5-44.el7 will be installed
+---> Package python3.x86_64 0:3.6.8-21.el7_9 will be installed
+--> Processing Dependency: python3-libs(x86-64) = 3.6.8-21.el7_9 for package: python3-3.6.8-21.el7_9.x86_64
+--> Processing Dependency: python3-setuptools for package: python3-3.6.8-21.el7_9.x86_64
+--> Processing Dependency: python3-pip for package: python3-3.6.8-21.el7_9.x86_64
+--> Processing Dependency: libpython3.6m.so.1.0()(64bit) for package: python3-3.6.8-21.el7_9.x86_64
+--> Running transaction check
+---> Package glibc-headers.x86_64 0:2.17-326.el7_9 will be installed
+--> Processing Dependency: kernel-headers >= 2.2.1 for package: glibc-headers-2.17-326.el7_9.x86_64
+--> Processing Dependency: kernel-headers for package: glibc-headers-2.17-326.el7_9.x86_64
+---> Package python3-libs.x86_64 0:3.6.8-21.el7_9 will be installed
+--> Processing Dependency: libtirpc.so.1()(64bit) for package: python3-libs-3.6.8-21.el7_9.x86_64
+---> Package python3-pip.noarch 0:9.0.3-8.el7 will be installed
+---> Package python3-setuptools.noarch 0:39.2.0-10.el7 will be installed
+--> Running transaction check
+---> Package kernel-headers.x86_64 0:3.10.0-1160.105.1.el7 will be installed
+---> Package libtirpc.x86_64 0:0.2.4-0.16.el7 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                Arch       Version                    Repository   Size
+================================================================================
+Installing:
+ cmake3                 x86_64     3.17.5-1.el7               epel        9.6 M
+ gcc-c++                x86_64     4.8.5-44.el7               base        7.2 M
+ jq                     x86_64     1.6-2.el7                  epel        167 k
+ libatomic              x86_64     4.8.5-44.el7               base         51 k
+ libstdc++-static       x86_64     4.8.5-44.el7               base        413 k
+ make                   x86_64     1:3.82-24.el7              base        421 k
+ numactl-devel          x86_64     2.0.12-5.el7               base         24 k
+Installing for dependencies:
+ cmake3-data            noarch     3.17.5-1.el7               epel        1.6 M
+ cpp                    x86_64     4.8.5-44.el7               base        5.9 M
+ emacs-filesystem       noarch     1:24.3-23.el7_9.1          updates      58 k
+ gcc                    x86_64     4.8.5-44.el7               base         16 M
+ glibc-devel            x86_64     2.17-326.el7_9             updates     1.1 M
+ glibc-headers          x86_64     2.17-326.el7_9             updates     691 k
+ kernel-headers         x86_64     3.10.0-1160.105.1.el7      updates     9.1 M
+ libgomp                x86_64     4.8.5-44.el7               base        159 k
+ libmpc                 x86_64     1.0.1-3.el7                base         51 k
+ libstdc++-devel        x86_64     4.8.5-44.el7               base        1.5 M
+ libtirpc               x86_64     0.2.4-0.16.el7             base         89 k
+ libuv                  x86_64     1:1.44.2-1.el7             epel        145 k
+ libzstd                x86_64     1.5.5-1.el7                epel        292 k
+ mpfr                   x86_64     3.1.1-4.el7                base        203 k
+ numactl-libs           x86_64     2.0.12-5.el7               base         30 k
+ oniguruma              x86_64     6.8.2-2.el7                epel        181 k
+ python3                x86_64     3.6.8-21.el7_9             updates      71 k
+ python3-libs           x86_64     3.6.8-21.el7_9             updates     7.0 M
+ python3-pip            noarch     9.0.3-8.el7                base        1.6 M
+ python3-setuptools     noarch     39.2.0-10.el7              base        629 k
+ rhash                  x86_64     1.3.4-2.el7                epel        118 k
+
+Transaction Summary
+================================================================================
+Install  7 Packages (+21 Dependent packages)
+
+Total download size: 64 M
+Installed size: 172 M
+Downloading packages:
+warning: /var/cache/yum/x86_64/7/epel/packages/cmake3-3.17.5-1.el7.x86_64.rpm: Header V4 RSA/SHA256 Signature, key ID 352c64e5: NOKEY
+Public key for cmake3-3.17.5-1.el7.x86_64.rpm is not installed
+--------------------------------------------------------------------------------
+Total                                               12 MB/s |  64 MB  00:05     
+Retrieving key from file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+Importing GPG key 0x352C64E5:
+ Userid     : "Fedora EPEL (7) <epel@fedoraproject.org>"
+ Fingerprint: 91e9 7d7c 4a5e 96f1 7f3e 888f 6a2f aea2 352c 64e5
+ Package    : epel-release-7-11.noarch (@extras)
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : mpfr-3.1.1-4.el7.x86_64                                     1/28 
+  Installing : libmpc-1.0.1-3.el7.x86_64                                   2/28 
+  Installing : libstdc++-devel-4.8.5-44.el7.x86_64                         3/28 
+  Installing : cpp-4.8.5-44.el7.x86_64                                     4/28 
+  Installing : libgomp-4.8.5-44.el7.x86_64                                 5/28 
+  Installing : 1:emacs-filesystem-24.3-23.el7_9.1.noarch                   6/28 
+  Installing : rhash-1.3.4-2.el7.x86_64                                    7/28 
+  Installing : numactl-libs-2.0.12-5.el7.x86_64                            8/28 
+  Installing : oniguruma-6.8.2-2.el7.x86_64                                9/28 
+  Installing : 1:libuv-1.44.2-1.el7.x86_64                                10/28 
+  Installing : libzstd-1.5.5-1.el7.x86_64                                 11/28 
+  Installing : kernel-headers-3.10.0-1160.105.1.el7.x86_64                12/28 
+  Installing : glibc-headers-2.17-326.el7_9.x86_64                        13/28 
+  Installing : glibc-devel-2.17-326.el7_9.x86_64                          14/28 
+  Installing : gcc-4.8.5-44.el7.x86_64                                    15/28 
+  Installing : libtirpc-0.2.4-0.16.el7.x86_64                             16/28 
+  Installing : python3-pip-9.0.3-8.el7.noarch                             17/28 
+  Installing : python3-setuptools-39.2.0-10.el7.noarch                    18/28 
+  Installing : python3-3.6.8-21.el7_9.x86_64                              19/28 
+  Installing : python3-libs-3.6.8-21.el7_9.x86_64                         20/28 
+  Installing : cmake3-3.17.5-1.el7.x86_64                                 21/28 
+  Installing : cmake3-data-3.17.5-1.el7.noarch                            22/28 
+  Installing : gcc-c++-4.8.5-44.el7.x86_64                                23/28 
+  Installing : jq-1.6-2.el7.x86_64                                        24/28 
+  Installing : numactl-devel-2.0.12-5.el7.x86_64                          25/28 
+  Installing : libstdc++-static-4.8.5-44.el7.x86_64                       26/28 
+  Installing : 1:make-3.82-24.el7.x86_64                                  27/28 
+  Installing : libatomic-4.8.5-44.el7.x86_64                              28/28 
+  Verifying  : libtirpc-0.2.4-0.16.el7.x86_64                              1/28 
+  Verifying  : gcc-c++-4.8.5-44.el7.x86_64                                 2/28 
+  Verifying  : python3-3.6.8-21.el7_9.x86_64                               3/28 
+  Verifying  : libstdc++-static-4.8.5-44.el7.x86_64                        4/28 
+  Verifying  : kernel-headers-3.10.0-1160.105.1.el7.x86_64                 5/28 
+  Verifying  : glibc-devel-2.17-326.el7_9.x86_64                           6/28 
+  Verifying  : python3-pip-9.0.3-8.el7.noarch                              7/28 
+  Verifying  : cmake3-3.17.5-1.el7.x86_64                                  8/28 
+  Verifying  : libzstd-1.5.5-1.el7.x86_64                                  9/28 
+  Verifying  : cpp-4.8.5-44.el7.x86_64                                    10/28 
+  Verifying  : glibc-headers-2.17-326.el7_9.x86_64                        11/28 
+  Verifying  : python3-libs-3.6.8-21.el7_9.x86_64                         12/28 
+  Verifying  : cmake3-data-3.17.5-1.el7.noarch                            13/28 
+  Verifying  : libatomic-4.8.5-44.el7.x86_64                              14/28 
+  Verifying  : 1:libuv-1.44.2-1.el7.x86_64                                15/28 
+  Verifying  : 1:make-3.82-24.el7.x86_64                                  16/28 
+  Verifying  : gcc-4.8.5-44.el7.x86_64                                    17/28 
+  Verifying  : oniguruma-6.8.2-2.el7.x86_64                               18/28 
+  Verifying  : libmpc-1.0.1-3.el7.x86_64                                  19/28 
+  Verifying  : python3-setuptools-39.2.0-10.el7.noarch                    20/28 
+  Verifying  : numactl-devel-2.0.12-5.el7.x86_64                          21/28 
+  Verifying  : numactl-libs-2.0.12-5.el7.x86_64                           22/28 
+  Verifying  : mpfr-3.1.1-4.el7.x86_64                                    23/28 
+  Verifying  : rhash-1.3.4-2.el7.x86_64                                   24/28 
+  Verifying  : libstdc++-devel-4.8.5-44.el7.x86_64                        25/28 
+  Verifying  : 1:emacs-filesystem-24.3-23.el7_9.1.noarch                  26/28 
+  Verifying  : libgomp-4.8.5-44.el7.x86_64                                27/28 
+  Verifying  : jq-1.6-2.el7.x86_64                                        28/28 
+
+Installed:
+  cmake3.x86_64 0:3.17.5-1.el7               gcc-c++.x86_64 0:4.8.5-44.el7      
+  jq.x86_64 0:1.6-2.el7                      libatomic.x86_64 0:4.8.5-44.el7    
+  libstdc++-static.x86_64 0:4.8.5-44.el7     make.x86_64 1:3.82-24.el7          
+  numactl-devel.x86_64 0:2.0.12-5.el7       
+
+Dependency Installed:
+  cmake3-data.noarch 0:3.17.5-1.el7                                             
+  cpp.x86_64 0:4.8.5-44.el7                                                     
+  emacs-filesystem.noarch 1:24.3-23.el7_9.1                                     
+  gcc.x86_64 0:4.8.5-44.el7                                                     
+  glibc-devel.x86_64 0:2.17-326.el7_9                                           
+  glibc-headers.x86_64 0:2.17-326.el7_9                                         
+  kernel-headers.x86_64 0:3.10.0-1160.105.1.el7                                 
+  libgomp.x86_64 0:4.8.5-44.el7                                                 
+  libmpc.x86_64 0:1.0.1-3.el7                                                   
+  libstdc++-devel.x86_64 0:4.8.5-44.el7                                         
+  libtirpc.x86_64 0:0.2.4-0.16.el7                                              
+  libuv.x86_64 1:1.44.2-1.el7                                                   
+  libzstd.x86_64 0:1.5.5-1.el7                                                  
+  mpfr.x86_64 0:3.1.1-4.el7                                                     
+  numactl-libs.x86_64 0:2.0.12-5.el7                                            
+  oniguruma.x86_64 0:6.8.2-2.el7                                                
+  python3.x86_64 0:3.6.8-21.el7_9                                               
+  python3-libs.x86_64 0:3.6.8-21.el7_9                                          
+  python3-pip.noarch 0:9.0.3-8.el7                                              
+  python3-setuptools.noarch 0:39.2.0-10.el7                                     
+  rhash.x86_64 0:1.3.4-2.el7                                                    
+
+Complete!
+Loaded plugins: fastestmirror, ovl
+Loading mirror speeds from cached hostfile
+ * base: ftp.tsukuba.wide.ad.jp
+ * epel: ftp.iij.ad.jp
+ * extras: ftp.tsukuba.wide.ad.jp
+ * updates: ftp.tsukuba.wide.ad.jp
+Resolving Dependencies
+--> Running transaction check
+---> Package centos-release-scl.noarch 0:2-3.el7.centos will be installed
+--> Processing Dependency: centos-release-scl-rh for package: centos-release-scl-2-3.el7.centos.noarch
+--> Running transaction check
+---> Package centos-release-scl-rh.noarch 0:2-3.el7.centos will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                    Arch        Version               Repository   Size
+================================================================================
+Installing:
+ centos-release-scl         noarch      2-3.el7.centos        extras       12 k
+Installing for dependencies:
+ centos-release-scl-rh      noarch      2-3.el7.centos        extras       12 k
+
+Transaction Summary
+================================================================================
+Install  1 Package (+1 Dependent package)
+
+Total download size: 24 k
+Installed size: 39 k
+Downloading packages:
+--------------------------------------------------------------------------------
+Total                                               88 kB/s |  24 kB  00:00     
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : centos-release-scl-rh-2-3.el7.centos.noarch                  1/2 
+  Installing : centos-release-scl-2-3.el7.centos.noarch                     2/2 
+  Verifying  : centos-release-scl-2-3.el7.centos.noarch                     1/2 
+  Verifying  : centos-release-scl-rh-2-3.el7.centos.noarch                  2/2 
+
+Installed:
+  centos-release-scl.noarch 0:2-3.el7.centos                                    
+
+Dependency Installed:
+  centos-release-scl-rh.noarch 0:2-3.el7.centos                                 
+
+Complete!
+Loaded plugins: fastestmirror, ovl
+Loading mirror speeds from cached hostfile
+ * base: ftp.tsukuba.wide.ad.jp
+ * centos-sclo-rh: ftp.tsukuba.wide.ad.jp
+ * centos-sclo-sclo: ftp.tsukuba.wide.ad.jp
+ * epel: ftp.iij.ad.jp
+ * extras: ftp.tsukuba.wide.ad.jp
+ * updates: ftp.tsukuba.wide.ad.jp
+Resolving Dependencies
+--> Running transaction check
+---> Package devtoolset-11.x86_64 0:11.1-2.el7 will be installed
+--> Processing Dependency: devtoolset-11-perftools for package: devtoolset-11-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-runtime for package: devtoolset-11-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-toolchain for package: devtoolset-11-11.1-2.el7.x86_64
+--> Running transaction check
+---> Package devtoolset-11-perftools.x86_64 0:11.1-2.el7 will be installed
+--> Processing Dependency: devtoolset-11-systemtap for package: devtoolset-11-perftools-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-valgrind for package: devtoolset-11-perftools-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-oprofile for package: devtoolset-11-perftools-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-dyninst for package: devtoolset-11-perftools-11.1-2.el7.x86_64
+---> Package devtoolset-11-runtime.x86_64 0:11.1-2.el7 will be installed
+--> Processing Dependency: scl-utils >= 20120927-11 for package: devtoolset-11-runtime-11.1-2.el7.x86_64
+--> Processing Dependency: /usr/sbin/restorecon for package: devtoolset-11-runtime-11.1-2.el7.x86_64
+--> Processing Dependency: /usr/sbin/restorecon for package: devtoolset-11-runtime-11.1-2.el7.x86_64
+--> Processing Dependency: /usr/sbin/semanage for package: devtoolset-11-runtime-11.1-2.el7.x86_64
+--> Processing Dependency: /usr/sbin/semanage for package: devtoolset-11-runtime-11.1-2.el7.x86_64
+---> Package devtoolset-11-toolchain.x86_64 0:11.1-2.el7 will be installed
+--> Processing Dependency: devtoolset-11-gcc for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-gcc-c++ for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-gcc-gfortran for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-binutils for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-gdb for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-strace for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-dwz for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-elfutils for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-ltrace for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-make for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-annobin for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Processing Dependency: devtoolset-11-memstomp for package: devtoolset-11-toolchain-11.1-2.el7.x86_64
+--> Running transaction check
+---> Package devtoolset-11-annobin-docs.noarch 0:10.38-1.el7 will be installed
+---> Package devtoolset-11-binutils.x86_64 0:2.36.1-1.el7.2 will be installed
+---> Package devtoolset-11-dwz.x86_64 0:0.14-2.el7 will be installed
+---> Package devtoolset-11-dyninst.x86_64 0:11.0.0-1.el7 will be installed
+--> Processing Dependency: libdw.so.dts.1(ELFUTILS_0.122)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libdw.so.dts.1(ELFUTILS_0.130)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libdw.so.dts.1(ELFUTILS_0.142)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libdw.so.dts.1(ELFUTILS_0.148)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libdw.so.dts.1(ELFUTILS_0.156)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libdw.so.dts.1(ELFUTILS_0.157)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libdw.so.dts.1(ELFUTILS_0.159)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libdw.so.dts.1(ELFUTILS_0.160)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libdw.so.dts.1(ELFUTILS_0.173)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libelf.so.dts.1(ELFUTILS_1.0)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libelf.so.dts.1(ELFUTILS_1.5)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libelf.so.dts.1(ELFUTILS_1.6)(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libdw.so.dts.1()(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+--> Processing Dependency: libelf.so.dts.1()(64bit) for package: devtoolset-11-dyninst-11.0.0-1.el7.x86_64
+---> Package devtoolset-11-elfutils.x86_64 0:0.185-2.el7 will be installed
+--> Processing Dependency: devtoolset-11-elfutils-debuginfod-client(x86-64) = 0.185-2.el7 for package: devtoolset-11-elfutils-0.185-2.el7.x86_64
+---> Package devtoolset-11-gcc.x86_64 0:11.2.1-9.1.el7 will be installed
+---> Package devtoolset-11-gcc-c++.x86_64 0:11.2.1-9.1.el7 will be installed
+--> Processing Dependency: devtoolset-11-libstdc++-devel = 11.2.1-9.1.el7 for package: devtoolset-11-gcc-c++-11.2.1-9.1.el7.x86_64
+---> Package devtoolset-11-gcc-gfortran.x86_64 0:11.2.1-9.1.el7 will be installed
+--> Processing Dependency: devtoolset-11-libquadmath-devel = 11.2.1-9.1.el7 for package: devtoolset-11-gcc-gfortran-11.2.1-9.1.el7.x86_64
+--> Processing Dependency: libgfortran5 >= 8.1.1 for package: devtoolset-11-gcc-gfortran-11.2.1-9.1.el7.x86_64
+---> Package devtoolset-11-gdb.x86_64 0:10.2-6.el7 will be installed
+--> Processing Dependency: libboost_regex.so.1.53.0()(64bit) for package: devtoolset-11-gdb-10.2-6.el7.x86_64
+--> Processing Dependency: libsource-highlight.so.4()(64bit) for package: devtoolset-11-gdb-10.2-6.el7.x86_64
+---> Package devtoolset-11-ltrace.x86_64 0:0.7.91-1.el7 will be installed
+---> Package devtoolset-11-make.x86_64 1:4.3-1.el7 will be installed
+---> Package devtoolset-11-memstomp.x86_64 0:0.1.5-6.el7 will be installed
+---> Package devtoolset-11-oprofile.x86_64 0:1.4.0-2.el7 will be installed
+--> Processing Dependency: which for package: devtoolset-11-oprofile-1.4.0-2.el7.x86_64
+---> Package devtoolset-11-strace.x86_64 0:5.13-3.3.el7 will be installed
+---> Package devtoolset-11-systemtap.x86_64 0:4.5-7.el7 will be installed
+--> Processing Dependency: devtoolset-11-systemtap-client = 4.5-7.el7 for package: devtoolset-11-systemtap-4.5-7.el7.x86_64
+--> Processing Dependency: devtoolset-11-systemtap-devel = 4.5-7.el7 for package: devtoolset-11-systemtap-4.5-7.el7.x86_64
+---> Package devtoolset-11-valgrind.x86_64 1:3.17.0-4.el7 will be installed
+---> Package policycoreutils.x86_64 0:2.5-34.el7 will be installed
+--> Processing Dependency: libselinux-utils >= 2.5-14 for package: policycoreutils-2.5-34.el7.x86_64
+---> Package policycoreutils-python.x86_64 0:2.5-34.el7 will be installed
+--> Processing Dependency: setools-libs >= 3.3.8-4 for package: policycoreutils-python-2.5-34.el7.x86_64
+--> Processing Dependency: libsemanage-python >= 2.5-14 for package: policycoreutils-python-2.5-34.el7.x86_64
+--> Processing Dependency: audit-libs-python >= 2.1.3-4 for package: policycoreutils-python-2.5-34.el7.x86_64
+--> Processing Dependency: python-IPy for package: policycoreutils-python-2.5-34.el7.x86_64
+--> Processing Dependency: libselinux-python for package: policycoreutils-python-2.5-34.el7.x86_64
+--> Processing Dependency: libqpol.so.1(VERS_1.4)(64bit) for package: policycoreutils-python-2.5-34.el7.x86_64
+--> Processing Dependency: libqpol.so.1(VERS_1.2)(64bit) for package: policycoreutils-python-2.5-34.el7.x86_64
+--> Processing Dependency: libcgroup for package: policycoreutils-python-2.5-34.el7.x86_64
+--> Processing Dependency: libapol.so.4(VERS_4.0)(64bit) for package: policycoreutils-python-2.5-34.el7.x86_64
+--> Processing Dependency: checkpolicy for package: policycoreutils-python-2.5-34.el7.x86_64
+--> Processing Dependency: libqpol.so.1()(64bit) for package: policycoreutils-python-2.5-34.el7.x86_64
+--> Processing Dependency: libapol.so.4()(64bit) for package: policycoreutils-python-2.5-34.el7.x86_64
+---> Package scl-utils.x86_64 0:20130529-19.el7 will be installed
+--> Running transaction check
+---> Package audit-libs-python.x86_64 0:2.8.5-4.el7 will be installed
+---> Package boost-regex.x86_64 0:1.53.0-28.el7 will be installed
+--> Processing Dependency: libicuuc.so.50()(64bit) for package: boost-regex-1.53.0-28.el7.x86_64
+--> Processing Dependency: libicui18n.so.50()(64bit) for package: boost-regex-1.53.0-28.el7.x86_64
+--> Processing Dependency: libicudata.so.50()(64bit) for package: boost-regex-1.53.0-28.el7.x86_64
+---> Package checkpolicy.x86_64 0:2.5-8.el7 will be installed
+---> Package devtoolset-11-elfutils-debuginfod-client.x86_64 0:0.185-2.el7 will be installed
+---> Package devtoolset-11-elfutils-libelf.x86_64 0:0.185-2.el7 will be installed
+---> Package devtoolset-11-elfutils-libs.x86_64 0:0.185-2.el7 will be installed
+---> Package devtoolset-11-libquadmath-devel.x86_64 0:11.2.1-9.1.el7 will be installed
+--> Processing Dependency: libquadmath(x86-64) for package: devtoolset-11-libquadmath-devel-11.2.1-9.1.el7.x86_64
+---> Package devtoolset-11-libstdc++-devel.x86_64 0:11.2.1-9.1.el7 will be installed
+---> Package devtoolset-11-systemtap-client.x86_64 0:4.5-7.el7 will be installed
+--> Processing Dependency: devtoolset-11-systemtap-runtime = 4.5-7.el7 for package: devtoolset-11-systemtap-client-4.5-7.el7.x86_64
+--> Processing Dependency: mokutil for package: devtoolset-11-systemtap-client-4.5-7.el7.x86_64
+--> Processing Dependency: unzip for package: devtoolset-11-systemtap-client-4.5-7.el7.x86_64
+--> Processing Dependency: zip for package: devtoolset-11-systemtap-client-4.5-7.el7.x86_64
+--> Processing Dependency: libavahi-client.so.3()(64bit) for package: devtoolset-11-systemtap-client-4.5-7.el7.x86_64
+--> Processing Dependency: libavahi-common.so.3()(64bit) for package: devtoolset-11-systemtap-client-4.5-7.el7.x86_64
+---> Package devtoolset-11-systemtap-devel.x86_64 0:4.5-7.el7 will be installed
+--> Processing Dependency: elfutils-devel for package: devtoolset-11-systemtap-devel-4.5-7.el7.x86_64
+--> Processing Dependency: kernel-devel-uname-r for package: devtoolset-11-systemtap-devel-4.5-7.el7.x86_64
+---> Package libcgroup.x86_64 0:0.41-21.el7 will be installed
+---> Package libgfortran5.x86_64 0:8.3.1-2.1.1.el7 will be installed
+---> Package libselinux-python.x86_64 0:2.5-15.el7 will be installed
+---> Package libselinux-utils.x86_64 0:2.5-15.el7 will be installed
+---> Package libsemanage-python.x86_64 0:2.5-14.el7 will be installed
+---> Package python-IPy.noarch 0:0.75-6.el7 will be installed
+---> Package setools-libs.x86_64 0:3.3.8-4.el7 will be installed
+---> Package source-highlight.x86_64 0:3.1.6-6.el7 will be installed
+--> Processing Dependency: ctags for package: source-highlight-3.1.6-6.el7.x86_64
+---> Package which.x86_64 0:2.20-7.el7 will be installed
+--> Running transaction check
+---> Package avahi-libs.x86_64 0:0.6.31-20.el7 will be installed
+---> Package ctags.x86_64 0:5.8-13.el7 will be installed
+---> Package devtoolset-11-systemtap-runtime.x86_64 0:4.5-7.el7 will be installed
+--> Processing Dependency: libboost_system.so.1.53.0()(64bit) for package: devtoolset-11-systemtap-runtime-4.5-7.el7.x86_64
+---> Package elfutils-devel.x86_64 0:0.176-5.el7 will be installed
+--> Processing Dependency: pkgconfig(libelf) = 0.176 for package: elfutils-devel-0.176-5.el7.x86_64
+--> Processing Dependency: elfutils-libelf-devel(x86-64) = 0.176-5.el7 for package: elfutils-devel-0.176-5.el7.x86_64
+--> Processing Dependency: pkgconfig(zlib) for package: elfutils-devel-0.176-5.el7.x86_64
+--> Processing Dependency: pkgconfig(liblzma) for package: elfutils-devel-0.176-5.el7.x86_64
+---> Package kernel-debug-devel.x86_64 0:3.10.0-1160.105.1.el7 will be installed
+---> Package libicu.x86_64 0:50.2-4.el7_7 will be installed
+---> Package libquadmath.x86_64 0:4.8.5-44.el7 will be installed
+---> Package mokutil.x86_64 0:15-8.el7 will be installed
+--> Processing Dependency: libefivar.so.1(libefivar.so.0)(64bit) for package: mokutil-15-8.el7.x86_64
+--> Processing Dependency: libefivar.so.1(LIBEFIVAR_0.24)(64bit) for package: mokutil-15-8.el7.x86_64
+--> Processing Dependency: libefivar.so.1()(64bit) for package: mokutil-15-8.el7.x86_64
+---> Package unzip.x86_64 0:6.0-24.el7_9 will be installed
+---> Package zip.x86_64 0:3.0-11.el7 will be installed
+--> Running transaction check
+---> Package boost-system.x86_64 0:1.53.0-28.el7 will be installed
+---> Package efivar-libs.x86_64 0:36-12.el7 will be installed
+---> Package elfutils-libelf-devel.x86_64 0:0.176-5.el7 will be installed
+---> Package xz-devel.x86_64 0:5.2.2-2.el7_9 will be installed
+---> Package zlib-devel.x86_64 0:1.2.7-21.el7_9 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                          Arch   Version           Repository      Size
+================================================================================
+Installing:
+ devtoolset-11                    x86_64 11.1-2.el7        centos-sclo-rh 5.7 k
+Installing for dependencies:
+ audit-libs-python                x86_64 2.8.5-4.el7       base            76 k
+ avahi-libs                       x86_64 0.6.31-20.el7     base            62 k
+ boost-regex                      x86_64 1.53.0-28.el7     base           296 k
+ boost-system                     x86_64 1.53.0-28.el7     base            40 k
+ checkpolicy                      x86_64 2.5-8.el7         base           295 k
+ ctags                            x86_64 5.8-13.el7        base           155 k
+ devtoolset-11-annobin-docs       noarch 10.38-1.el7       centos-sclo-rh 107 k
+ devtoolset-11-binutils           x86_64 2.36.1-1.el7.2    centos-sclo-rh 6.3 M
+ devtoolset-11-dwz                x86_64 0.14-2.el7        centos-sclo-rh 118 k
+ devtoolset-11-dyninst            x86_64 11.0.0-1.el7      centos-sclo-rh 4.3 M
+ devtoolset-11-elfutils           x86_64 0.185-2.el7       centos-sclo-rh 432 k
+ devtoolset-11-elfutils-debuginfod-client
+                                  x86_64 0.185-2.el7       centos-sclo-rh  58 k
+ devtoolset-11-elfutils-libelf    x86_64 0.185-2.el7       centos-sclo-rh 214 k
+ devtoolset-11-elfutils-libs      x86_64 0.185-2.el7       centos-sclo-rh 266 k
+ devtoolset-11-gcc                x86_64 11.2.1-9.1.el7    centos-sclo-rh  32 M
+ devtoolset-11-gcc-c++            x86_64 11.2.1-9.1.el7    centos-sclo-rh  12 M
+ devtoolset-11-gcc-gfortran       x86_64 11.2.1-9.1.el7    centos-sclo-rh  13 M
+ devtoolset-11-gdb                x86_64 10.2-6.el7        centos-sclo-rh 3.9 M
+ devtoolset-11-libquadmath-devel  x86_64 11.2.1-9.1.el7    centos-sclo-rh 180 k
+ devtoolset-11-libstdc++-devel    x86_64 11.2.1-9.1.el7    centos-sclo-rh 3.6 M
+ devtoolset-11-ltrace             x86_64 0.7.91-1.el7      centos-sclo-rh 134 k
+ devtoolset-11-make               x86_64 1:4.3-1.el7       centos-sclo-rh 515 k
+ devtoolset-11-memstomp           x86_64 0.1.5-6.el7       centos-sclo-rh 443 k
+ devtoolset-11-oprofile           x86_64 1.4.0-2.el7       centos-sclo-rh 1.8 M
+ devtoolset-11-perftools          x86_64 11.1-2.el7        centos-sclo-rh 3.1 k
+ devtoolset-11-runtime            x86_64 11.1-2.el7        centos-sclo-rh  20 k
+ devtoolset-11-strace             x86_64 5.13-3.3.el7      centos-sclo-rh 1.3 M
+ devtoolset-11-systemtap          x86_64 4.5-7.el7         centos-sclo-rh  15 k
+ devtoolset-11-systemtap-client   x86_64 4.5-7.el7         centos-sclo-rh 3.7 M
+ devtoolset-11-systemtap-devel    x86_64 4.5-7.el7         centos-sclo-rh 2.3 M
+ devtoolset-11-systemtap-runtime  x86_64 4.5-7.el7         centos-sclo-rh 437 k
+ devtoolset-11-toolchain          x86_64 11.1-2.el7        centos-sclo-rh 3.3 k
+ devtoolset-11-valgrind           x86_64 1:3.17.0-4.el7    centos-sclo-rh  11 M
+ efivar-libs                      x86_64 36-12.el7         base            88 k
+ elfutils-devel                   x86_64 0.176-5.el7       base            90 k
+ elfutils-libelf-devel            x86_64 0.176-5.el7       base            40 k
+ kernel-debug-devel               x86_64 3.10.0-1160.105.1.el7
+                                                           updates         18 M
+ libcgroup                        x86_64 0.41-21.el7       base            66 k
+ libgfortran5                     x86_64 8.3.1-2.1.1.el7   base           796 k
+ libicu                           x86_64 50.2-4.el7_7      base           6.9 M
+ libquadmath                      x86_64 4.8.5-44.el7      base           190 k
+ libselinux-python                x86_64 2.5-15.el7        base           236 k
+ libselinux-utils                 x86_64 2.5-15.el7        base           151 k
+ libsemanage-python               x86_64 2.5-14.el7        base           113 k
+ mokutil                          x86_64 15-8.el7          base            42 k
+ policycoreutils                  x86_64 2.5-34.el7        base           917 k
+ policycoreutils-python           x86_64 2.5-34.el7        base           457 k
+ python-IPy                       noarch 0.75-6.el7        base            32 k
+ scl-utils                        x86_64 20130529-19.el7   base            24 k
+ setools-libs                     x86_64 3.3.8-4.el7       base           620 k
+ source-highlight                 x86_64 3.1.6-6.el7       base           611 k
+ unzip                            x86_64 6.0-24.el7_9      updates        172 k
+ which                            x86_64 2.20-7.el7        base            41 k
+ xz-devel                         x86_64 5.2.2-2.el7_9     updates         46 k
+ zip                              x86_64 3.0-11.el7        base           260 k
+ zlib-devel                       x86_64 1.2.7-21.el7_9    updates         50 k
+
+Transaction Summary
+================================================================================
+Install  1 Package (+56 Dependent packages)
+
+Total download size: 129 M
+Installed size: 375 M
+Downloading packages:
+warning: /var/cache/yum/x86_64/7/centos-sclo-rh/packages/devtoolset-11-11.1-2.el7.x86_64.rpm: Header V4 RSA/SHA256 Signature, key ID f2ee9d55: NOKEY
+Public key for devtoolset-11-11.1-2.el7.x86_64.rpm is not installed
+--------------------------------------------------------------------------------
+Total                                               18 MB/s | 129 MB  00:07     
+Retrieving key from file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-SCLo
+Importing GPG key 0xF2EE9D55:
+ Userid     : "CentOS SoftwareCollections SIG (https://wiki.centos.org/SpecialInterestGroup/SCLo) <security@centos.org>"
+ Fingerprint: c4db d535 b1fb ba14 f8ba 64a8 4eb8 4e71 f2ee 9d55
+ Package    : centos-release-scl-rh-2-3.el7.centos.noarch (@extras)
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-SCLo
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : avahi-libs-0.6.31-20.el7.x86_64                             1/57 
+  Installing : libquadmath-4.8.5-44.el7.x86_64                             2/57 
+  Installing : zlib-devel-1.2.7-21.el7_9.x86_64                            3/57 
+  Installing : elfutils-libelf-devel-0.176-5.el7.x86_64                    4/57 
+  Installing : libgfortran5-8.3.1-2.1.1.el7.x86_64                         5/57 
+  Installing : libcgroup-0.41-21.el7.x86_64                                6/57 
+  Installing : kernel-debug-devel-3.10.0-1160.105.1.el7.x86_64             7/57 
+  Installing : zip-3.0-11.el7.x86_64                                       8/57 
+  Installing : audit-libs-python-2.8.5-4.el7.x86_64                        9/57 
+  Installing : libselinux-python-2.5-15.el7.x86_64                        10/57 
+  Installing : libsemanage-python-2.5-14.el7.x86_64                       11/57 
+  Installing : boost-system-1.53.0-28.el7.x86_64                          12/57 
+  Installing : setools-libs-3.3.8-4.el7.x86_64                            13/57 
+  Installing : libselinux-utils-2.5-15.el7.x86_64                         14/57 
+  Installing : policycoreutils-2.5-34.el7.x86_64                          15/57 
+  Installing : python-IPy-0.75-6.el7.noarch                               16/57 
+  Installing : which-2.20-7.el7.x86_64                                    17/57 
+install-info: No such file or directory for /usr/share/info/which.info.gz
+  Installing : scl-utils-20130529-19.el7.x86_64                           18/57 
+  Installing : checkpolicy-2.5-8.el7.x86_64                               19/57 
+  Installing : policycoreutils-python-2.5-34.el7.x86_64                   20/57 
+  Installing : devtoolset-11-runtime-11.1-2.el7.x86_64                    21/57 
+ValueError: SELinux policy is not managed or store cannot be accessed.
+  Installing : devtoolset-11-elfutils-libelf-0.185-2.el7.x86_64           22/57 
+  Installing : devtoolset-11-elfutils-libs-0.185-2.el7.x86_64             23/57 
+  Installing : devtoolset-11-elfutils-debuginfod-client-0.185-2.el7.x86   24/57 
+  Installing : devtoolset-11-elfutils-0.185-2.el7.x86_64                  25/57 
+  Installing : devtoolset-11-dyninst-11.0.0-1.el7.x86_64                  26/57 
+  Installing : devtoolset-11-binutils-2.36.1-1.el7.2.x86_64               27/57 
+install-info: No such file or directory for /opt/rh/devtoolset-11/root/usr/share/info/as.info.gz
+install-info: No such file or directory for /opt/rh/devtoolset-11/root/usr/share/info/binutils.info.gz
+install-info: No such file or directory for /opt/rh/devtoolset-11/root/usr/share/info/gprof.info.gz
+install-info: No such file or directory for /opt/rh/devtoolset-11/root/usr/share/info/ld.info.gz
+  Installing : devtoolset-11-systemtap-runtime-4.5-7.el7.x86_64           28/57 
+  Installing : devtoolset-11-strace-5.13-3.3.el7.x86_64                   29/57 
+  Installing : devtoolset-11-dwz-0.14-2.el7.x86_64                        30/57 
+  Installing : devtoolset-11-libstdc++-devel-11.2.1-9.1.el7.x86_64        31/57 
+  Installing : 1:devtoolset-11-make-4.3-1.el7.x86_64                      32/57 
+  Installing : devtoolset-11-annobin-docs-10.38-1.el7.noarch              33/57 
+  Installing : 1:devtoolset-11-valgrind-3.17.0-4.el7.x86_64               34/57 
+  Installing : devtoolset-11-oprofile-1.4.0-2.el7.x86_64                  35/57 
+  Installing : devtoolset-11-ltrace-0.7.91-1.el7.x86_64                   36/57 
+  Installing : devtoolset-11-memstomp-0.1.5-6.el7.x86_64                  37/57 
+  Installing : libicu-50.2-4.el7_7.x86_64                                 38/57 
+  Installing : boost-regex-1.53.0-28.el7.x86_64                           39/57 
+  Installing : efivar-libs-36-12.el7.x86_64                               40/57 
+  Installing : mokutil-15-8.el7.x86_64                                    41/57 
+  Installing : unzip-6.0-24.el7_9.x86_64                                  42/57 
+  Installing : devtoolset-11-systemtap-client-4.5-7.el7.x86_64            43/57 
+  Installing : ctags-5.8-13.el7.x86_64                                    44/57 
+  Installing : source-highlight-3.1.6-6.el7.x86_64                        45/57 
+  Installing : devtoolset-11-gdb-10.2-6.el7.x86_64                        46/57 
+  Installing : xz-devel-5.2.2-2.el7_9.x86_64                              47/57 
+  Installing : devtoolset-11-gcc-11.2.1-9.1.el7.x86_64                    48/57 
+  Installing : devtoolset-11-gcc-c++-11.2.1-9.1.el7.x86_64                49/57 
+  Installing : devtoolset-11-libquadmath-devel-11.2.1-9.1.el7.x86_64      50/57 
+  Installing : devtoolset-11-gcc-gfortran-11.2.1-9.1.el7.x86_64           51/57 
+  Installing : devtoolset-11-toolchain-11.1-2.el7.x86_64                  52/57 
+  Installing : elfutils-devel-0.176-5.el7.x86_64                          53/57 
+  Installing : devtoolset-11-systemtap-devel-4.5-7.el7.x86_64             54/57 
+  Installing : devtoolset-11-systemtap-4.5-7.el7.x86_64                   55/57 
+  Installing : devtoolset-11-perftools-11.1-2.el7.x86_64                  56/57 
+  Installing : devtoolset-11-11.1-2.el7.x86_64                            57/57 
+  Verifying  : devtoolset-11-strace-5.13-3.3.el7.x86_64                    1/57 
+  Verifying  : devtoolset-11-dwz-0.14-2.el7.x86_64                         2/57 
+  Verifying  : xz-devel-5.2.2-2.el7_9.x86_64                               3/57 
+  Verifying  : ctags-5.8-13.el7.x86_64                                     4/57 
+  Verifying  : devtoolset-11-systemtap-4.5-7.el7.x86_64                    5/57 
+  Verifying  : unzip-6.0-24.el7_9.x86_64                                   6/57 
+  Verifying  : efivar-libs-36-12.el7.x86_64                                7/57 
+  Verifying  : elfutils-devel-0.176-5.el7.x86_64                           8/57 
+  Verifying  : devtoolset-11-elfutils-debuginfod-client-0.185-2.el7.x86    9/57 
+  Verifying  : devtoolset-11-11.1-2.el7.x86_64                            10/57 
+  Verifying  : libicu-50.2-4.el7_7.x86_64                                 11/57 
+  Verifying  : devtoolset-11-gdb-10.2-6.el7.x86_64                        12/57 
+  Verifying  : devtoolset-11-libstdc++-devel-11.2.1-9.1.el7.x86_64        13/57 
+  Verifying  : devtoolset-11-gcc-gfortran-11.2.1-9.1.el7.x86_64           14/57 
+  Verifying  : checkpolicy-2.5-8.el7.x86_64                               15/57 
+  Verifying  : devtoolset-11-perftools-11.1-2.el7.x86_64                  16/57 
+  Verifying  : scl-utils-20130529-19.el7.x86_64                           17/57 
+  Verifying  : 1:devtoolset-11-make-4.3-1.el7.x86_64                      18/57 
+  Verifying  : devtoolset-11-elfutils-0.185-2.el7.x86_64                  19/57 
+  Verifying  : policycoreutils-2.5-34.el7.x86_64                          20/57 
+  Verifying  : devtoolset-11-gcc-c++-11.2.1-9.1.el7.x86_64                21/57 
+  Verifying  : which-2.20-7.el7.x86_64                                    22/57 
+  Verifying  : devtoolset-11-systemtap-client-4.5-7.el7.x86_64            23/57 
+  Verifying  : python-IPy-0.75-6.el7.noarch                               24/57 
+  Verifying  : devtoolset-11-systemtap-runtime-4.5-7.el7.x86_64           25/57 
+  Verifying  : devtoolset-11-elfutils-libelf-0.185-2.el7.x86_64           26/57 
+  Verifying  : devtoolset-11-toolchain-11.1-2.el7.x86_64                  27/57 
+  Verifying  : libselinux-utils-2.5-15.el7.x86_64                         28/57 
+  Verifying  : policycoreutils-python-2.5-34.el7.x86_64                   29/57 
+  Verifying  : boost-regex-1.53.0-28.el7.x86_64                           30/57 
+  Verifying  : devtoolset-11-libquadmath-devel-11.2.1-9.1.el7.x86_64      31/57 
+  Verifying  : devtoolset-11-annobin-docs-10.38-1.el7.noarch              32/57 
+  Verifying  : zlib-devel-1.2.7-21.el7_9.x86_64                           33/57 
+  Verifying  : setools-libs-3.3.8-4.el7.x86_64                            34/57 
+  Verifying  : boost-system-1.53.0-28.el7.x86_64                          35/57 
+  Verifying  : libsemanage-python-2.5-14.el7.x86_64                       36/57 
+  Verifying  : devtoolset-11-gcc-11.2.1-9.1.el7.x86_64                    37/57 
+  Verifying  : devtoolset-11-runtime-11.1-2.el7.x86_64                    38/57 
+  Verifying  : source-highlight-3.1.6-6.el7.x86_64                        39/57 
+  Verifying  : libgfortran5-8.3.1-2.1.1.el7.x86_64                        40/57 
+  Verifying  : libselinux-python-2.5-15.el7.x86_64                        41/57 
+  Verifying  : 1:devtoolset-11-valgrind-3.17.0-4.el7.x86_64               42/57 
+  Verifying  : devtoolset-11-oprofile-1.4.0-2.el7.x86_64                  43/57 
+  Verifying  : mokutil-15-8.el7.x86_64                                    44/57 
+  Verifying  : audit-libs-python-2.8.5-4.el7.x86_64                       45/57 
+  Verifying  : devtoolset-11-ltrace-0.7.91-1.el7.x86_64                   46/57 
+  Verifying  : devtoolset-11-systemtap-devel-4.5-7.el7.x86_64             47/57 
+  Verifying  : elfutils-libelf-devel-0.176-5.el7.x86_64                   48/57 
+  Verifying  : devtoolset-11-elfutils-libs-0.185-2.el7.x86_64             49/57 
+  Verifying  : devtoolset-11-binutils-2.36.1-1.el7.2.x86_64               50/57 
+  Verifying  : libquadmath-4.8.5-44.el7.x86_64                            51/57 
+  Verifying  : devtoolset-11-dyninst-11.0.0-1.el7.x86_64                  52/57 
+  Verifying  : zip-3.0-11.el7.x86_64                                      53/57 
+  Verifying  : devtoolset-11-memstomp-0.1.5-6.el7.x86_64                  54/57 
+  Verifying  : kernel-debug-devel-3.10.0-1160.105.1.el7.x86_64            55/57 
+  Verifying  : avahi-libs-0.6.31-20.el7.x86_64                            56/57 
+  Verifying  : libcgroup-0.41-21.el7.x86_64                               57/57 
+
+Installed:
+  devtoolset-11.x86_64 0:11.1-2.el7                                             
+
+Dependency Installed:
+  audit-libs-python.x86_64 0:2.8.5-4.el7                                        
+  avahi-libs.x86_64 0:0.6.31-20.el7                                             
+  boost-regex.x86_64 0:1.53.0-28.el7                                            
+  boost-system.x86_64 0:1.53.0-28.el7                                           
+  checkpolicy.x86_64 0:2.5-8.el7                                                
+  ctags.x86_64 0:5.8-13.el7                                                     
+  devtoolset-11-annobin-docs.noarch 0:10.38-1.el7                               
+  devtoolset-11-binutils.x86_64 0:2.36.1-1.el7.2                                
+  devtoolset-11-dwz.x86_64 0:0.14-2.el7                                         
+  devtoolset-11-dyninst.x86_64 0:11.0.0-1.el7                                   
+  devtoolset-11-elfutils.x86_64 0:0.185-2.el7                                   
+  devtoolset-11-elfutils-debuginfod-client.x86_64 0:0.185-2.el7                 
+  devtoolset-11-elfutils-libelf.x86_64 0:0.185-2.el7                            
+  devtoolset-11-elfutils-libs.x86_64 0:0.185-2.el7                              
+  devtoolset-11-gcc.x86_64 0:11.2.1-9.1.el7                                     
+  devtoolset-11-gcc-c++.x86_64 0:11.2.1-9.1.el7                                 
+  devtoolset-11-gcc-gfortran.x86_64 0:11.2.1-9.1.el7                            
+  devtoolset-11-gdb.x86_64 0:10.2-6.el7                                         
+  devtoolset-11-libquadmath-devel.x86_64 0:11.2.1-9.1.el7                       
+  devtoolset-11-libstdc++-devel.x86_64 0:11.2.1-9.1.el7                         
+  devtoolset-11-ltrace.x86_64 0:0.7.91-1.el7                                    
+  devtoolset-11-make.x86_64 1:4.3-1.el7                                         
+  devtoolset-11-memstomp.x86_64 0:0.1.5-6.el7                                   
+  devtoolset-11-oprofile.x86_64 0:1.4.0-2.el7                                   
+  devtoolset-11-perftools.x86_64 0:11.1-2.el7                                   
+  devtoolset-11-runtime.x86_64 0:11.1-2.el7                                     
+  devtoolset-11-strace.x86_64 0:5.13-3.3.el7                                    
+  devtoolset-11-systemtap.x86_64 0:4.5-7.el7                                    
+  devtoolset-11-systemtap-client.x86_64 0:4.5-7.el7                             
+  devtoolset-11-systemtap-devel.x86_64 0:4.5-7.el7                              
+  devtoolset-11-systemtap-runtime.x86_64 0:4.5-7.el7                            
+  devtoolset-11-toolchain.x86_64 0:11.1-2.el7                                   
+  devtoolset-11-valgrind.x86_64 1:3.17.0-4.el7                                  
+  efivar-libs.x86_64 0:36-12.el7                                                
+  elfutils-devel.x86_64 0:0.176-5.el7                                           
+  elfutils-libelf-devel.x86_64 0:0.176-5.el7                                    
+  kernel-debug-devel.x86_64 0:3.10.0-1160.105.1.el7                             
+  libcgroup.x86_64 0:0.41-21.el7                                                
+  libgfortran5.x86_64 0:8.3.1-2.1.1.el7                                         
+  libicu.x86_64 0:50.2-4.el7_7                                                  
+  libquadmath.x86_64 0:4.8.5-44.el7                                             
+  libselinux-python.x86_64 0:2.5-15.el7                                         
+  libselinux-utils.x86_64 0:2.5-15.el7                                          
+  libsemanage-python.x86_64 0:2.5-14.el7                                        
+  mokutil.x86_64 0:15-8.el7                                                     
+  policycoreutils.x86_64 0:2.5-34.el7                                           
+  policycoreutils-python.x86_64 0:2.5-34.el7                                    
+  python-IPy.noarch 0:0.75-6.el7                                                
+  scl-utils.x86_64 0:20130529-19.el7                                            
+  setools-libs.x86_64 0:3.3.8-4.el7                                             
+  source-highlight.x86_64 0:3.1.6-6.el7                                         
+  unzip.x86_64 0:6.0-24.el7_9                                                   
+  which.x86_64 0:2.20-7.el7                                                     
+  xz-devel.x86_64 0:5.2.2-2.el7_9                                               
+  zip.x86_64 0:3.0-11.el7                                                       
+  zlib-devel.x86_64 0:1.2.7-21.el7_9                                            
+
+Complete!
+Cloning into 'LineairDB'...
+Submodule 'third_party/concurrentqueue' (https://github.com/cameron314/concurrentqueue.git) registered for path 'third_party/concurrentqueue'
+Submodule 'third_party/cxxopts' (https://github.com/jarro2783/cxxopts.git) registered for path 'third_party/cxxopts'
+Submodule 'third_party/googletest' (https://github.com/google/googletest.git) registered for path 'third_party/googletest'
+Submodule 'third_party/msgpack' (https://github.com/msgpack/msgpack-c.git) registered for path 'third_party/msgpack'
+Submodule 'third_party/rapidjson' (https://github.com/Tencent/rapidjson.git) registered for path 'third_party/rapidjson'
+Submodule 'third_party/spdlog' (https://github.com/gabime/spdlog.git) registered for path 'third_party/spdlog'
+Cloning into 'third_party/concurrentqueue'...
+Submodule path 'third_party/concurrentqueue': checked out '6dd38b8a1dbaa7863aa907045f32308a56a6ff5d'
+Cloning into 'third_party/cxxopts'...
+Submodule path 'third_party/cxxopts': checked out '7bf29108d51227fbddbdd7bb8959ca562a051598'
+Cloning into 'third_party/googletest'...
+Submodule path 'third_party/googletest': checked out '7c07a863693b0c831f80473f7c6905d7e458682c'
+Cloning into 'third_party/msgpack'...
+Submodule path 'third_party/msgpack': checked out '2987022c10ac066b55c6e554369eab92cdebe506'
+Cloning into 'third_party/rapidjson'...
+Submodule path 'third_party/rapidjson': checked out 'f9d53419e912910fd8fa57d5705fa41425428c35'
+Submodule 'thirdparty/gtest' (https://github.com/google/googletest.git) registered for path 'thirdparty/gtest'
+Cloning into 'thirdparty/gtest'...
+Submodule path 'third_party/rapidjson/thirdparty/gtest': checked out 'ba96d0b1161f540656efdaed035b3c062b60e006'
+Cloning into 'third_party/spdlog'...
+Submodule path 'third_party/spdlog': checked out 'ac55e60488032b9acde8940a5de099541c4515da'
+-- The CXX compiler identification is GNU 11.2.1
+-- Check for working CXX compiler: /opt/rh/devtoolset-11/root/usr/bin/c++
+-- Check for working CXX compiler: /opt/rh/devtoolset-11/root/usr/bin/c++ - works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found PkgConfig: /usr/bin/pkg-config (found version "0.27.1") 
+warning: jemalloc is not found in this environment.
+-- /home/LineairDB/include/lineairdb/config.h;/home/LineairDB/include/lineairdb/database.h;/home/LineairDB/include/lineairdb/lineairdb.h;/home/LineairDB/include/lineairdb/transaction.h;/home/LineairDB/include/lineairdb/tx_status.h
+-- The C compiler identification is GNU 11.2.1
+-- Check for working C compiler: /opt/rh/devtoolset-11/root/usr/bin/cc
+-- Check for working C compiler: /opt/rh/devtoolset-11/root/usr/bin/cc - works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+-- Looking for pthread_create in pthreads
+-- Looking for pthread_create in pthreads - not found
+-- Looking for pthread_create in pthread
+-- Looking for pthread_create in pthread - found
+-- Found Threads: TRUE  
+-- Test executable is found: database_test.cpp
+-- Test executable is found: durability_test.cpp
+-- Test executable is found: handler_transaction_test.cpp
+-- Test executable is found: unit-tests/concurrency_control_test.cpp
+-- Test executable is found: unit-tests/concurrent_table_test.cpp
+-- Test executable is found: unit-tests/index_test.cpp
+-- Test executable is found: unit-tests/lock_test.cpp
+-- Test executable is found: unit-tests/thread_pool_test.cpp
+-- Microbenchmark executable is found: index
+-- Microbenchmark executable is found: lock
+-- Microbenchmark executable is found: recoverytime
+-- Could NOT find Doxygen (missing: DOXYGEN_EXECUTABLE) 
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/LineairDB/build
+Scanning dependencies of target gtest
+[  2%] Building CXX object third_party/googletest/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o
+Scanning dependencies of target lineairdb
+[  6%] Building CXX object CMakeFiles/lineairdb.dir/src/callback/callback_manager.cpp.o
+[  6%] Building CXX object CMakeFiles/lineairdb.dir/src/callback/impl/thread_local_callback_manager.cpp.o
+[  9%] Building CXX object CMakeFiles/lineairdb.dir/src/database.cpp.o
+[ 11%] Building CXX object CMakeFiles/lineairdb.dir/src/index/concurrent_table.cpp.o
+[ 13%] Building CXX object CMakeFiles/lineairdb.dir/src/index/precision_locking_index/range_index/precision_locking.cpp.o
+[ 16%] Building CXX object CMakeFiles/lineairdb.dir/src/recovery/impl/thread_local_logger.cpp.o
+[ 20%] Building CXX object CMakeFiles/lineairdb.dir/src/recovery/logger.cpp.o
+[ 20%] Building CXX object CMakeFiles/lineairdb.dir/src/thread_pool/thread_pool.cpp.o
+[ 23%] Building CXX object CMakeFiles/lineairdb.dir/src/transaction_impl.cpp.o
+[ 25%] Linking CXX static library ../../../lib/libgtest.a
+[ 25%] Built target gtest
+Scanning dependencies of target gtest_main
+Scanning dependencies of target gmock
+[ 27%] Building CXX object third_party/googletest/googletest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o
+[ 30%] Building CXX object third_party/googletest/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.o
+[ 32%] Linking CXX static library ../../../lib/libgtest_main.a
+[ 32%] Built target gtest_main
+[ 34%] Linking CXX static library ../../../lib/libgmock.a
+[ 34%] Built target gmock
+Scanning dependencies of target gmock_main
+[ 37%] Building CXX object third_party/googletest/googlemock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o
+[ 39%] Linking CXX static library liblineairdb.a
+[ 41%] Linking CXX static library ../../../lib/libgmock_main.a
+[ 41%] Built target gmock_main
+[ 41%] Built target lineairdb
+Scanning dependencies of target handler_transaction_test
+Scanning dependencies of target database_test
+Scanning dependencies of target thread_pool_test
+Scanning dependencies of target index_test
+[ 44%] Building CXX object tests/CMakeFiles/database_test.dir/database_test.cpp.o
+[ 46%] Building CXX object tests/CMakeFiles/thread_pool_test.dir/unit-tests/thread_pool_test.cpp.o
+[ 48%] Building CXX object tests/CMakeFiles/handler_transaction_test.dir/handler_transaction_test.cpp.o
+[ 51%] Building CXX object tests/CMakeFiles/index_test.dir/unit-tests/index_test.cpp.o
+Scanning dependencies of target lock
+Scanning dependencies of target recoverytime
+Scanning dependencies of target ycsb
+Scanning dependencies of target lock_test
+Scanning dependencies of target concurrency_control_test
+Scanning dependencies of target durability_test
+[ 53%] Building CXX object bench/CMakeFiles/lock.dir/microbench/lock/lock_bench.cpp.o
+[ 55%] Building CXX object bench/CMakeFiles/recoverytime.dir/microbench/recoverytime/recovery_time_bench.cpp.o
+[ 60%] Building CXX object bench/CMakeFiles/ycsb.dir/ycsb/benchmark.cpp.o
+[ 60%] Building CXX object bench/CMakeFiles/ycsb.dir/ycsb/cmdline.cpp.o
+[ 62%] Building CXX object tests/CMakeFiles/lock_test.dir/unit-tests/lock_test.cpp.o
+[ 65%] Building CXX object tests/CMakeFiles/durability_test.dir/durability_test.cpp.o
+[ 67%] Building CXX object tests/CMakeFiles/concurrency_control_test.dir/unit-tests/concurrency_control_test.cpp.o
+Scanning dependencies of target concurrent_table_test
+Scanning dependencies of target index
+[ 72%] Building CXX object bench/CMakeFiles/index.dir/microbench/index/indexbench.cpp.o
+[ 72%] Building CXX object tests/CMakeFiles/concurrent_table_test.dir/unit-tests/concurrent_table_test.cpp.o
+[ 74%] Linking CXX executable thread_pool_test
+[ 74%] Built target thread_pool_test
+[ 76%] Linking CXX executable handler_transaction_test
+[ 79%] Linking CXX executable index_test
+[ 81%] Linking CXX executable database_test
+[ 81%] Built target handler_transaction_test
+[ 81%] Built target index_test
+[ 81%] Built target database_test
+[ 83%] Linking CXX executable ycsb
+[ 83%] Built target ycsb
+[ 86%] Linking CXX executable durability_test
+[ 88%] Linking CXX executable concurrent_table_test
+[ 88%] Built target durability_test
+[ 90%] Linking CXX executable concurrency_control_test
+[ 90%] Built target concurrent_table_test
+[ 93%] Linking CXX executable lock_test
+[ 93%] Built target lock_test
+[ 93%] Built target concurrency_control_test
+[ 95%] Linking CXX executable recoverytime
+[ 95%] Built target recoverytime
+[ 97%] Linking CXX executable lock
+[ 97%] Built target lock
+[100%] Linking CXX executable index
+[100%] Built target index
+Build done
+Benchmark Started
+bench.sh done
+ Container 8c12g  Stopping
+ Container 8c12g  Stopped
+ Container 8c12g  Removing
+ Container 8c12g  Removed
+ Network lineairdb_default  Removing
+ Network lineairdb_default  Removed
+Deleted Volumes:
+6f07780e8691f61e394d814130cf617eb930e44c5f0330bb3e1003c36cd1a60e
+676fbaff60f79a4bfe712cb009d4245d92d6c7a35fc9ab5b0ecccf420100e94f
+2c65c3034839241e72d25b059e089cf882b0f9dbaa3836c381a7c0237b26050b
+
+Total reclaimed space: 0B

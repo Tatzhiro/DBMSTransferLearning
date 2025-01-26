@@ -1,0 +1,16 @@
+model:
+  name: "Proposed"
+  pipeline:
+    _target_: regression.Proposed
+    workload: "a"
+    system:
+      _target_: regression.LineairDBConfiguration
+    base_data_path: "result/mac/8c12g-result.csv"
+    ref_data_path: "result/mac/4c6g-result.csv"
+    target_data_path: "result/24c32g-result.csv"
+
+iterations: 20
+
+parameters: ["clients", "checkpoint_interval", "epoch_duration", "rehash_threshold", "prefetch_locality"]
+
+data:

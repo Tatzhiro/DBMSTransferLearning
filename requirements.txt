@@ -1,0 +1,7 @@
+pandas
+matplotlib
+IPython
+numpy
+scikit-learn
+statsmodels
+hydra-core
