@@ -1,7 +1,7 @@
 workload: "oltp_read_write"
 system:
   _target_: regression.MySQLConfiguration
-data_path: "result/mysql-64table-1Mrec-4client"
+data_path: "dataset/transfer_learning/mysql-64table-1Mrec-4client"
 
 parameters: ["innodb_buffer_pool_size", "innodb_read_io_threads", "innodb_write_io_threads", 
              "innodb_flush_log_at_trx_commit", "innodb_adaptive_hash_index", "sync_binlog",

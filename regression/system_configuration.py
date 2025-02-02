@@ -88,19 +88,26 @@ class MySQLConfiguration(SystemConfiguration):
     return self.machine_dependent_params
   
   def preprocess_param_values(self, df: DataFrame) -> DataFrame:
-    df["innodb_buffer_pool_size"] = pd.to_numeric(df["innodb_buffer_pool_size"].str.removesuffix("GB"), errors='coerce')
-    df["innodb_adaptive_hash_index"] = pd.to_numeric(df["innodb_adaptive_hash_index"] == "ON").astype(int)
+    if df["innodb_buffer_pool_size"].dtype != "int64":
+      df["innodb_buffer_pool_size"] = pd.to_numeric(df["innodb_buffer_pool_size"].str.removesuffix("GB"), errors='coerce')
+    if df["innodb_adaptive_hash_index"].dtype != "int64":
+      df["innodb_adaptive_hash_index"] = pd.to_numeric(df["innodb_adaptive_hash_index"] == "ON").astype(int)
 
-    numeric_file_size = []
-    for val in df["innodb_log_file_size"].to_list():
-      if "MB" in val:
-        num_val = int(val.removesuffix("MB")) / 1000
-        numeric_file_size.append(num_val)
-      elif "GB" in val:
-        num_val = int(val.removesuffix("GB"))
-        numeric_file_size.append(num_val)
-    df["innodb_log_file_size"] = numeric_file_size
 
+    if df["innodb_log_file_size"].dtype != "float64":
+      numeric_file_size = []
+      for val in df["innodb_log_file_size"].to_list():
+        if "MB" in val:
+          num_val = int(val.removesuffix("MB")) / 1000
+          numeric_file_size.append(num_val)
+        elif "GB" in val:
+          num_val = int(val.removesuffix("GB"))
+          numeric_file_size.append(num_val)
+      df["innodb_log_file_size"] = numeric_file_size
+
+    for param in self.param_names:
+      assert df[param].dtype == "int64" or df[param].dtype == "float64", f"Parameter {param} is not numeric"
+    
     return df
   
   def __init__(self) -> None:

@@ -3,7 +3,7 @@ feature_selector:
   _target_: regression.HandPickedFeatureSelector
   features: ["innodb_buffer_pool_size"]
 
-datadir: ["result/mysql-64table-1Mrec-4client", "result/mysql-64table-5Mrec-4client"]
+datadir: ["dataset/transfer_learning/mysql-64table-1Mrec-4client", "dataset/transfer_learning/mysql-64table-5Mrec-4client"]
 systems:
   [
     _target_: regression.MySQLConfiguration,

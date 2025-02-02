@@ -110,7 +110,7 @@ class Vanilla(TransferLearning):
 class Proposed(TransferLearning):
   def __init__(self, workload, system, base_data_path: str, ref_data_path: str, target_data_path: str, regression_data_threshold=5, regression_rate=0.95) -> None:
     self.distribution_distance = BhattacharyyaDistance()
-    self.distance_threshold = 0.1
+    self.distance_threshold = 0.001
     self.feature_selector = L2SFeatureSelector()
 
 

@@ -156,14 +156,30 @@ class L2SFeatureSelector(FeatureSelector):
     
     def select_parameter_to_sample(self):
         param = self.coefficients.drop("const")
-        param = param / np.sum(param)
-        distribution = param.to_list()
+        param_magnitude = np.abs(param)
+        param_frq = param_magnitude / np.sum(param_magnitude)
+        distribution = param_frq.to_list()
         return np.random.choice(self.important_params, p=distribution)
     
     def get_parameter_importance(self):
         param = self.coefficients
         if "const" in self.coefficients.index:
             param = self.coefficients.drop("const")
-        param = param / np.sum(param)
-        importance = [(self.important_params[i], coef) for i, coef in enumerate(param)]
+        param_magnitude = np.abs(param)
+        param_frq = param_magnitude / np.sum(param_magnitude)
+        importance = [(self.important_params[i], coef) for i, coef in enumerate(param_frq)]
         return importance
+    
+    def get_parameter_vector(self):
+        vector = np.zeros(len(self.parameters))
+        param = self.coefficients
+        if "const" in self.coefficients.index:
+            param = self.coefficients.drop("const")
+        param_magnitude = np.abs(param)
+        param_frq = param_magnitude / np.sum(param_magnitude)
+        for i, p in enumerate(self.parameters):
+            if p in self.important_params:
+                vector[i] = param_frq[self.important_params.index(p)]
+            else:
+                vector[i] = 0
+        return vector

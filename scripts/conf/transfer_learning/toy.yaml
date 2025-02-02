@@ -6,9 +6,9 @@ models:
       workload: "a"
       system:
         _target_: regression.LineairDBConfiguration
-      base_data_path: "result/mac/8c12g-result.csv"
-      ref_data_path: "result/mac/4c6g-result.csv"
-      target_data_path: "result/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/mac/8c12g-result.csv"
+      ref_data_path: "dataset/transfer_learning/mac/4c6g-result.csv"
+      target_data_path: "dataset/transfer_learning/24c32g-result.csv"
   ToyChimera:
     name: "ToyChimera"
     pipeline:
@@ -16,9 +16,9 @@ models:
       workload: "a"
       system:
         _target_: regression.LineairDBConfiguration
-      base_data_path: "result/mac/8c12g-result.csv"
-      ref_data_path: "result/mac/4c6g-result.csv"
-      target_data_path: "result/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/mac/8c12g-result.csv"
+      ref_data_path: "dataset/transfer_learning/mac/4c6g-result.csv"
+      target_data_path: "dataset/transfer_learning/24c32g-result.csv"
   vanilla:
     name: "Baseline"
     pipeline:
@@ -26,8 +26,8 @@ models:
       workload: "a"
       system:
         _target_: regression.LineairDBConfiguration
-      base_data_path: "result/mac/8c12g-result.csv"
-      target_data_path: "result/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/mac/8c12g-result.csv"
+      target_data_path: "dataset/transfer_learning/24c32g-result.csv"
 
 sizes: [5, 10, 20, 40, 60, 80, 100, 150, 200, 300, 400]
 

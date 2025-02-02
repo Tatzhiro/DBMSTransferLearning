@@ -6,9 +6,9 @@ models:
       workload: "a"
       system:
         _target_: regression.LineairDBConfiguration
-      base_data_path: "result/mac/8c12g-result.csv"
-      ref_data_path: "result/mac/4c6g-result.csv"
-      target_data_path: "result/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/mac/8c12g-result.csv"
+      ref_data_path: "dataset/transfer_learning/mac/4c6g-result.csv"
+      target_data_path: "dataset/transfer_learning/24c32g-result.csv"
   model_shift:
     name: "Model Shift"
     pipeline:
@@ -16,8 +16,8 @@ models:
       workload: "a"
       system:
         _target_: regression.LineairDBConfiguration
-      base_data_path: "result/mac/8c12g-result.csv"
-      target_data_path: "result/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/mac/8c12g-result.csv"
+      target_data_path: "dataset/transfer_learning/24c32g-result.csv"
   l2s:
     name: "L2S"
     pipeline:
@@ -25,8 +25,8 @@ models:
       workload: "a"
       system:
         _target_: regression.LineairDBConfiguration
-      base_data_path: "result/mac/8c12g-result.csv"
-      target_data_path: "result/24c32g-result.csv"  
+      base_data_path: "dataset/transfer_learning/mac/8c12g-result.csv"
+      target_data_path: "dataset/transfer_learning/24c32g-result.csv"  
   data_reuse:
     name: "Data Reuse"
     pipeline:
@@ -34,8 +34,8 @@ models:
       workload: "a"
       system:
         _target_: regression.LineairDBConfiguration
-      base_data_path: "result/mac/8c12g-result.csv"
-      target_data_path: "result/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/mac/8c12g-result.csv"
+      target_data_path: "dataset/transfer_learning/24c32g-result.csv"
   l2s_data_reuse:
     name: "L2S Data Reuse"
     pipeline:
@@ -43,8 +43,8 @@ models:
       workload: "a"
       system:
         _target_: regression.LineairDBConfiguration
-      base_data_path: "result/mac/8c12g-result.csv"
-      target_data_path: "result/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/mac/8c12g-result.csv"
+      target_data_path: "dataset/transfer_learning/24c32g-result.csv"
 
 sizes: [5, 10, 15, 20, 25, 30, 35, 40]
 

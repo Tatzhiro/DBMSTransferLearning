@@ -1,4 +1,4 @@
-datadir: ["result/mysql-64table-1Mrec-4client", "result/2-semi-sync-tbl-size-1m"]
+datadir: ["dataset/transfer_learning/mysql-64table-1Mrec-4client", "dataset/transfer_learning/2-semi-sync-tbl-size-1m"]
 systems:
   [
     _target_: regression.MySQLConfiguration,

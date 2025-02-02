@@ -1,5 +1,6 @@
 outputs
 myenv
+venv
 */__pycache__/
 */out
 old
