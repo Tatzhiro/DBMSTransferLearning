@@ -3,6 +3,7 @@ from time import sleep, time
 import re
 import datetime
 import os
+import platform
 
 class Parameter:
   def __init__(self, name: str, values: list, default, dynamic: bool = True) -> None:
@@ -10,6 +11,36 @@ class Parameter:
     self.values: list = values
     self.default = default
     self.dynamic: bool = dynamic
+    
+    
+class OLTP:
+  def prepare(self, num_table, table_size):
+    assert(subprocess.run(["sudo", "sysbench", "--db-driver=mysql", "--mysql-host=127.0.0.1", "--mysql-user=root", 
+                            f"--tables={num_table}", f"--table-size={table_size}", f"--threads={os.cpu_count()}", 
+                            "oltp_common", "prepare"]).returncode == 0)
+  
+  def run(self, num_table, table_size, workload):
+    return subprocess.run(["sudo", "sysbench", "--db-driver=mysql", "--mysql-host=127.0.0.1", "--mysql-user=root",  
+                          f"--tables={num_table}", f"--table-size={table_size}", f"--threads={num_client}", 
+                          "--warmup-time=30", f"--time={run_time}", workload, "run"], capture_output=True, text=True).stdout
+    
+
+class TPCC:
+  def prepare(self, num_table, table_size):
+    os.chdir("./sysbench-tpcc")
+    assert(subprocess.run(["./tpcc.lua", "--mysql-host=127.0.0.1", "--mysql-user=root", \
+                            f"--threads={os.cpu_count()}", "--tables=1", "--scale=1", "--db-driver=mysql", "prepare"]).returncode == 0)
+    os.chdir("..")
+    
+  def run(self, num_table, table_size, workload):
+    os.chdir("./sysbench-tpcc")
+    result =  subprocess.run(["./tpcc.lua", "--mysql-host=127.0.0.1", \
+                              "--mysql-user=root", f"--time={run_time}",  \
+                              "--threads=64", "--tables=1", "--scale=1", "--db-driver=mysql", "run"], 
+                              capture_output=True, text=True).stdout
+    os.chdir("..")
+    return result
+
 
 def main():
   print(datetime.datetime.now(), flush=True)
@@ -20,12 +51,12 @@ def main():
     cnt = 0
     set_docker_hardware_resources(cpu, ram)
 
-    benchmark(cpu, ram)
+    measure(cpu, ram)
     
     print(datetime.datetime.now(), flush=True)
     print(f"benchmark for {cpu}c{ram}g finished with {cnt} measurements", flush=True)
 
-def benchmark(cpu, ram):
+def measure(cpu, ram):
   server = f"{cpu}c{ram}g"
   global cnt
 
@@ -33,24 +64,30 @@ def benchmark(cpu, ram):
     for table_size in table_sizes:
       initialize_mysql()
       assert(subprocess.run(mysql_connection + ["-e", "drop database if exists sbtest; create database sbtest"]).returncode == 0)
-      assert(subprocess.run(["sudo", "sysbench", "--db-driver=mysql", "--mysql-host=127.0.0.1", "--mysql-user=root", 
-                            f"--tables={num_table}", f"--table-size={table_size}", f"--threads={os.cpu_count()}", 
-                            "oltp_common", "prepare"]).returncode == 0)
+      
+      benchmark.prepare(num_table, table_size)
 
       for workload in workloads:
+        
+        output_filename = f"result/{server}-{workload}.csv"
 
         sysbench_settings = [workload, num_table, table_size, num_client]
-        if not os.path.isfile(f"result/{server}-result.csv"):
+        if not os.path.isfile(output_filename):
           csv_clms = [param.name for param in parameters] + ["tps"] + ["workload", "num_table", "table_size", "num_client"]
           csv_clms = ",".join(csv_clms) + "\n"
-          with open(f"result/{server}-result.csv", "w") as f:
+          with open(output_filename, "w") as f:
             f.write(csv_clms)
         assert_default_configuration()
 
         for i, param1 in enumerate(parameters):
+          
+          print(f"{param1.name} started", flush=True)
+          
           for j, param2 in enumerate(parameters):
             if j <= i: continue
-
+            
+            print(f"{param2.name} started", flush=True)
+            
             for value1 in param1.values:
               if is_over_spec_limit(param1, value1, cpu, ram):
                 continue
@@ -60,22 +97,24 @@ def benchmark(cpu, ram):
                 if is_violation_of_constraint(param1, value1, param2, value2, cpu, ram):
                   continue
 
-
-                subprocess.run('sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"', shell=True)
+                if get_os() == "Linux":
+                  subprocess.run('sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"', shell=True)
+                elif get_os() == "Darwin":
+                  subprocess.run('sync && sudo purge', shell=True)
+                else:
+                  raise Exception("Unsupported OS")
 
                 start = time() 
                 
                 set_configuration(param1, param2, value1, value2)
 
-                result = subprocess.run(["sudo", "sysbench", "--db-driver=mysql", "--mysql-host=127.0.0.1", "--mysql-user=root",  
-                                        f"--tables={num_table}", f"--table-size={table_size}", f"--threads={num_client}", 
-                                        "--warmup-time=30", f"--time={run_time}", workload, "run"], capture_output=True, text=True).stdout
+                result = benchmark.run(num_table, table_size, workload)
                 
                 # purge binlog
                 assert(subprocess.run(mysql_connection + ["-e", "reset master"]).returncode == 0)
 
                 row = make_row(param1, param2, value1, value2, result, sysbench_settings)
-                with open(f"result/{server}-result.csv", "a") as f:
+                with open(output_filename, "a") as f:
                   f.write(row)
 
                 end = time()
@@ -114,8 +153,12 @@ def is_violation_of_constraint(param1: Parameter, value1, param2: Parameter, val
 
 
 def set_docker_hardware_resources(cpu: int, ram: int):
-  subprocess.run(['sed', '-i', f"s/^          cpus:.*/          cpus: \'{cpu}\'/", "./mysql-docker-compose.yaml"])
-  subprocess.run(['sed', '-i', f"s/^          memory:.*/          memory: {ram}gb/", "./mysql-docker-compose.yaml"])
+  if get_os() == "Linux":
+    subprocess.run(['sed', '-i', f"s/^          cpus:.*/          cpus: \'{cpu}\'/", "./mysql-docker-compose.yaml"])
+    subprocess.run(['sed', '-i', f"s/^          memory:.*/          memory: {ram}gb/", "./mysql-docker-compose.yaml"])
+  elif get_os() == "Darwin":
+    subprocess.run(['sed', '-i', "", f"s/^          cpus:.*/          cpus: \'{cpu}\'/", "./mysql-docker-compose.yaml"])
+    subprocess.run(['sed', '-i', "", f"s/^          memory:.*/          memory: {ram}gb/", "./mysql-docker-compose.yaml"])
 
 def assert_default_configuration():
   with open("./mysql-docker-compose.yaml", "r") as f:
@@ -130,7 +173,10 @@ def assert_default_configuration():
 def extract_throughput(result):
   pattern = r"transactions:\s+\d+\s+\((\d+\.\d+) per sec\.\)"
   match = re.search(pattern, result)
-  return match.group(1)
+  if match:
+    return match.group(1)
+  else:
+    return "N/A"
 
 def make_row(param1, param2, value1, value2, sysbench_result, sysbench_settings):
   """Format database parameters, sysbench result, and sysbench settings into a row of csv"""
@@ -168,7 +214,10 @@ def set_configuration(param1, param2, value1, value2):
 
 
 def write_mycnf(name, value):
-  assert(subprocess.run(['sed', '-i', f"s/^      - --{name}=.*/      - --{name}={value}/", "./mysql-docker-compose.yaml"]).returncode == 0)
+  if get_os() == "Linux":
+    assert(subprocess.run(['sed', '-i', f"s/^      - --{name}=.*/      - --{name}={value}/", "./mysql-docker-compose.yaml"]).returncode == 0)
+  elif get_os() == "Darwin":
+    assert(subprocess.run(['sed', '-i', '', f"s/^      - --{name}=.*/      - --{name}={value}/", "./mysql-docker-compose.yaml"]).returncode == 0)
 
 def restart_mysql():
   assert(subprocess.run(["sudo", "docker", "compose", "-f", "mysql-docker-compose.yaml", "stop", "mysql"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0)
@@ -195,19 +244,30 @@ def calculate_iter(parameters: list):
       iter += len(param1.values) * len(param2.values)
   return iter
 
+def subprocess_failed(subprocess_result: subprocess.CompletedProcess):
+  if subprocess_result.returncode != 0:
+    print(subprocess_result.stdout, flush=True)
+    print(subprocess_result.stderr, flush=True)
+    return True
+  return False
+
+def get_os():
+  return platform.system()
+
 if __name__ == "__main__":
   # ログ用
   cnt = 0
 
   # ワークロード設定
   num_tables = [64]
-  table_sizes = [1000000, 5000000]
+  table_sizes = [1000000]
   run_time = 60
   num_client = 4
-  workloads = ["oltp_read_write"]
+  workloads = ["oltp_write_only"]
+  benchmark = OLTP()
 
   # 計測したいマシンのスペック: list[（CPU, RAM）]
-  servers = [(12, 16), (24, 32)]
+  servers = [(24, 32)]
 
   # mysql接続用コマンド
   mysql_connection = ["mysql", "-u", "root", "-h", "127.0.0.1", "--port", "3306"]
