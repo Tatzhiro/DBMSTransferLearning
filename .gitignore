@@ -4,7 +4,5 @@ myenv
 */out
 old
 .vscode
-.DS_Store
-*/.ipynb_checkpoints
-*/.pytest
-*.log
+venv
+fig/
