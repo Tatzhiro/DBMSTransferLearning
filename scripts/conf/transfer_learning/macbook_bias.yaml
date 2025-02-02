@@ -6,9 +6,9 @@ models:
       workload: "a"
       system:
         _target_: regression.LineairDBConfiguration
-      base_data_path: "result/mac/8c12g-result.csv"
-      ref_data_path: "result/mac/4c6g-result.csv"
-      target_data_path: "result/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/lineairdb/mac/8c12g-result.csv"
+      ref_data_path: "dataset/transfer_learning/lineairdb/mac/4c6g-result.csv"
+      target_data_path: "dataset/transfer_learning/lineairdb/24c32g-result.csv"
       regression_data_threshold: 40
       regression_rate: 1 
   model_shift:
@@ -18,8 +18,8 @@ models:
       workload: "a"
       system:
         _target_: regression.LineairDBConfiguration
-      base_data_path: "result/mac/8c12g-result.csv"
-      target_data_path: "result/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/lineairdb/mac/8c12g-result.csv"
+      target_data_path: "dataset/transfer_learning/lineairdb/24c32g-result.csv"
   data_reuse:
     name: "Source Model"
     pipeline:
@@ -27,8 +27,8 @@ models:
       workload: "a"
       system:
         _target_: regression.LineairDBConfiguration
-      base_data_path: "result/mac/8c12g-result.csv"
-      target_data_path: "result/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/lineairdb/mac/8c12g-result.csv"
+      target_data_path: "dataset/transfer_learning/lineairdb/24c32g-result.csv"
       no_sample: True
 
 sizes: [0, 5, 10, 15, 20, 25, 30, 35, 40]

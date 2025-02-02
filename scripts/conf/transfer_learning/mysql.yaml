@@ -6,9 +6,9 @@ models:
       workload: "oltp_read_write"
       system:
         _target_: regression.MySQLConfiguration
-      base_data_path: "result/mysql-64table-1Mrec-4client/8c12g-result.csv"
-      ref_data_path: "result/mysql-64table-1Mrec-4client/4c6g-result.csv"
-      target_data_path: "result/mysql-64table-1Mrec-4client/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/mysql/mac/8c12g-result.csv"
+      ref_data_path: "dataset/transfer_learning/mysql/mac/4c6g-result.csv"
+      target_data_path: "dataset/transfer_learning/mysql/24c32g-result.csv"
   model_shift:
     name: "Model Shift"
     pipeline:
@@ -16,8 +16,8 @@ models:
       workload: "oltp_read_write"
       system:
         _target_: regression.MySQLConfiguration
-      base_data_path: "result/mysql-64table-1Mrec-4client/8c12g-result.csv"
-      target_data_path: "result/mysql-64table-1Mrec-4client/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/mysql/mac/8c12g-result.csv"
+      target_data_path: "dataset/transfer_learning/mysql/24c32g-result.csv"
   l2s:
     name: "L2S"
     pipeline:
@@ -25,8 +25,8 @@ models:
       workload: "oltp_read_write"
       system:
         _target_: regression.MySQLConfiguration
-      base_data_path: "result/mysql-64table-1Mrec-4client/8c12g-result.csv"
-      target_data_path: "result/mysql-64table-1Mrec-4client/24c32g-result.csv"  
+      base_data_path: "dataset/transfer_learning/mysql/mac/8c12g-result.csv"
+      target_data_path: "dataset/transfer_learning/mysql/24c32g-result.csv"  
   data_reuse:
     name: "Data Reuse"
     pipeline:
@@ -34,8 +34,8 @@ models:
       workload: "oltp_read_write"
       system:
         _target_: regression.MySQLConfiguration
-      base_data_path: "result/mysql-64table-1Mrec-4client/8c12g-result.csv"
-      target_data_path: "result/mysql-64table-1Mrec-4client/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/mysql/mac/8c12g-result.csv"
+      target_data_path: "dataset/transfer_learning/mysql/24c32g-result.csv"
   l2s_data_reuse:
     name: "L2S Data Reuse"
     pipeline:
@@ -43,10 +43,10 @@ models:
       workload: "oltp_read_write"
       system:
         _target_: regression.MySQLConfiguration
-      base_data_path: "result/mysql-64table-1Mrec-4client/8c12g-result.csv"
-      target_data_path: "result/mysql-64table-1Mrec-4client/24c32g-result.csv"
+      base_data_path: "dataset/transfer_learning/mysql/mac/8c12g-result.csv"
+      target_data_path: "dataset/transfer_learning/mysql/24c32g-result.csv"
 
-sizes: [5, 10, 15, 20]
+sizes: [5, 10, 20, 40, 80, 160, 320, 360, 400, 440, 480, 640]
 
 num_trial: 5
 

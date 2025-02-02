@@ -5,8 +5,8 @@ model:
     workload: "a"
     system:
       _target_: regression.LineairDBConfiguration
-    base_data_path: "result/mac/8c12g-result.csv"
-    target_data_path: "result/24c32g-result.csv"
+    base_data_path: "dataset/transfer_learning/lineairdb/mac/8c12g-result.csv"
+    target_data_path: "dataset/transfer_learning/lineairdb/24c32g-result.csv"
 
 iterations: 20
 
