@@ -7,6 +7,7 @@ from omegaconf import DictConfig
 import pandas as pd
 from regression import Pipeline, SystemConfiguration, MultivariateDataLoader, MultivariateRegressionPipeline, SimpleRegressionDataLoader, FeatureSelector, FeatureEngineer
 from regression import group_features
+from sklearn.metrics import mean_absolute_percentage_error
 import shutil
 from IPython import embed
 from copy import deepcopy
@@ -42,6 +43,9 @@ def main(cfg: DictConfig) -> None:
         pipeline.initialize()
         pipeline.simulate(cfg.iterations)
         target_df = pipeline.target_df
+        prediction = pipeline.predict(target_df)
+        mape = mean_absolute_percentage_error(target_df[pipeline.system.get_perf_metric()], prediction)
+        print(f"mape = {mape}")
 
     predict_df = deepcopy(target_df)
     prediction = pipeline.predict(target_df)

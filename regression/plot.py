@@ -8,7 +8,7 @@ import numpy as np
 class PlotDesign:
     def __init__(self, x_label: str, y_label: str, figsize: (int, int) = (6.4, 4.8),
                  draw_x_ticks: list = True, x_tick_rotation: int = 0, x_tick_fontsize: int = 22,
-                 xlim: list = None, ylim: list = None,
+                 xlim: list = None, ylim: list = None, legend_anchor: (float, float) = None,
                  fontsize: int = 22, line_width: int = 2, marker_size: int = 10,
                  line_colors: list[str] = ['red', 'blue', 'green', 'orange', 'purple', 'brown'], 
                  line_styles: list[str] = ['solid', 'dotted', 'dashed', 'dashdot', (0, (5, 1)), (0, (3, 10, 1, 10))]) -> None:
@@ -20,6 +20,7 @@ class PlotDesign:
       self.x_tick_fontsize: int = x_tick_fontsize
       self.xlim: list = xlim
       self.ylim: list = ylim
+      self.legend_anchor: (float, float) = legend_anchor
       self.fontsize: int = fontsize
       self.line_width: int = line_width
       self.marker_size: int = marker_size
@@ -80,7 +81,8 @@ def plot_bargraph(df: DataFrame, design: PlotDesign, output_name: str, threshold
     plt.xlabel(f"{design.x_label}", fontsize=design.fontsize)
     plt.tight_layout()
     output_name = output_name.replace(".pdf", "_barplot.pdf")
-    plt.legend(bbox_to_anchor =(1.05, 1.2), ncol = 3, fontsize=design.fontsize-4)
+    if design.legend_anchor != None:
+        plt.legend(bbox_to_anchor=design.legend_anchor, ncol=3, fontsize=design.fontsize-4)
     plt.savefig(f"{output_name}", bbox_inches='tight')
     plt.close()
     

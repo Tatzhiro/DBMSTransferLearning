@@ -88,6 +88,10 @@ class MySQLConfiguration(SystemConfiguration):
     return self.machine_dependent_params
   
   def preprocess_param_values(self, df: DataFrame) -> DataFrame:
+    # return if columns are already all numeric
+    if df[self.param_names].apply(pd.to_numeric, errors='coerce').notnull().all().all():
+      return df
+    
     df["innodb_buffer_pool_size"] = pd.to_numeric(df["innodb_buffer_pool_size"].str.removesuffix("GB"), errors='coerce')
     df["innodb_adaptive_hash_index"] = pd.to_numeric(df["innodb_adaptive_hash_index"] == "ON").astype(int)
 

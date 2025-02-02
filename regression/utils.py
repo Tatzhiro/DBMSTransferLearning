@@ -48,7 +48,10 @@ def group_features(df, important_features, system: SystemConfiguration):
 def read_data_csv(filename: str, system: SystemConfiguration, workload: str):
     df = pd.read_csv(filename)
     df = system.preprocess_param_values(df)
-    df = df[df["workload"] == workload][system.get_param_names() + [system.get_perf_metric()]]
+    if workload == "None":
+        df = df[system.get_param_names() + [system.get_perf_metric()]]
+    else:
+        df = df[df["workload"] == workload][system.get_param_names() + [system.get_perf_metric()]]
     return df
 
 

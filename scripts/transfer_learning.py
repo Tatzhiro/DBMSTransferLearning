@@ -14,6 +14,8 @@ from sklearn.metrics import mean_absolute_percentage_error
 import warnings
 from sklearn.exceptions import ConvergenceWarning
 
+import sys
+
 
 @hydra.main(version_base=None, config_path="conf/transfer_learning")
 def main(cfg: DictConfig) -> None:
@@ -23,6 +25,13 @@ def main(cfg: DictConfig) -> None:
     config_name = os.path.basename(args_dict["--config-name"]).split(".")[0]
     warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
     warnings.filterwarnings(action='ignore', category=UserWarning)
+    
+    hydra_cfg = hydra.core.hydra_config.HydraConfig.get()
+    hydra_runtime_output_dir = hydra_cfg["runtime"]["output_dir"]
+    output_name = os.path.join(hydra_runtime_output_dir, config_name)
+    
+    f = open(f"{output_name}.log", 'w')
+    sys.stdout = f
 
     models = cfg.models
     sizes = cfg.sizes
@@ -55,9 +64,6 @@ def main(cfg: DictConfig) -> None:
         df_std[f"{models[key].name}"] = mean_stds
         print(f"validation done: {models[key].name}\n")
 
-    hydra_cfg = hydra.core.hydra_config.HydraConfig.get()
-    hydra_runtime_output_dir = hydra_cfg["runtime"]["output_dir"]
-    output_name = os.path.join(hydra_runtime_output_dir, config_name)
 
     df_mean.to_csv(f"{output_name}.csv")
     df_std.to_csv(f"{output_name}_std.csv")
@@ -74,6 +80,13 @@ def custom_sort_key(index_str):
     # Convert parts to floats for numerical comparison
     floats = [float(part) for part in parts]
     return floats
+
+class Tee(object): 
+    def __init__(self, *files):
+        self.files = files
+    def write(self, obj):
+        for f in self.files:
+            f.write(obj)
     
 if __name__ == "__main__":
     main()

@@ -30,15 +30,39 @@ class UtilityFeatureSelector(FeatureSelector):
 
 class LassoFeatureSelector(FeatureSelector):
     def select_important_features(self, df: pd.DataFrame, system: SystemConfiguration) -> list:
+        self.parameters = system.get_param_names()
+        self.perf_metric = system.get_perf_metric()
+        
         model = make_pipeline(StandardScaler(), LassoCV())
-        X = df[system.get_param_names()]
-        y = df[system.get_perf_metric()]
+        X = df[self.parameters]
+        y = df[self.perf_metric]
         model.fit(X, y)
-        self.coef = [(system.get_param_names()[i], coef) for i, coef in enumerate(model["lassocv"].coef_) if coef != 0]
+        self.coef = [(self.parameters[i], coef) for i, coef in enumerate(model["lassocv"].coef_) if coef != 0]
         return [param for param, _ in self.coef]
     
     def get_parameter_importance(self):
         return self.coef
+    
+    def select_parameter_to_sample(self):
+        param = self.coef
+        param_magnitude = np.abs([coef for _, coef in param])
+        param_frq = param_magnitude / np.sum(param_magnitude)
+        distribution = param_frq
+        return np.random.choice([param for param, _ in param], p=distribution)
+    
+    def get_parameter_vector(self):
+        vector = np.zeros(len(self.parameters))
+        important_params = [p[0] for p in self.coef]
+        coef = [p[1] for p in self.coef]
+        param_magnitude = np.abs(coef)
+        param_frq = param_magnitude / np.sum(param_magnitude)
+        dic = {p: coef for p, coef in zip(important_params, param_frq)}
+        for i, p in enumerate(self.parameters):
+            if p in important_params:
+                vector[i] = dic[p]
+            else:
+                vector[i] = 0
+        return vector
 
 
 class ElasticNetFeatureSelector(FeatureSelector):
@@ -127,9 +151,10 @@ class L2SFeatureSelector(FeatureSelector):
             if worst_pval > threshold_out:
                 changed = True
                 worst_feature = pvalues.idxmax()
-                included.remove(included[worst_feature])
+                drop_param = included[worst_feature]
+                included.remove(drop_param)
                 if verbose:
-                    print('Drop {:30} with p-value {:.6}'.format(self.parameters[worst_feature], worst_pval))
+                    print('Drop {:30} with p-value {:.6}'.format(self.parameters[drop_param], worst_pval))
 
             if not changed:
                 break
@@ -156,14 +181,30 @@ class L2SFeatureSelector(FeatureSelector):
     
     def select_parameter_to_sample(self):
         param = self.coefficients.drop("const")
-        param = param / np.sum(param)
-        distribution = param.to_list()
+        param_magnitude = np.abs(param)
+        param_frq = param_magnitude / np.sum(param_magnitude)
+        distribution = param_frq.to_list()
         return np.random.choice(self.important_params, p=distribution)
     
     def get_parameter_importance(self):
         param = self.coefficients
         if "const" in self.coefficients.index:
             param = self.coefficients.drop("const")
-        param = param / np.sum(param)
-        importance = [(self.important_params[i], coef) for i, coef in enumerate(param)]
+        param_magnitude = np.abs(param)
+        param_frq = param_magnitude / np.sum(param_magnitude)
+        importance = [(self.important_params[i], coef) for i, coef in enumerate(param_frq)]
         return importance
+    
+    def get_parameter_vector(self):
+        vector = np.zeros(len(self.parameters))
+        param = self.coefficients
+        if "const" in self.coefficients.index:
+            param = self.coefficients.drop("const")
+        param_magnitude = np.abs(param)
+        param_frq = param_magnitude / np.sum(param_magnitude)
+        for i, p in enumerate(self.parameters):
+            if p in self.important_params:
+                vector[i] = param_frq[self.important_params.index(p)]
+            else:
+                vector[i] = 0
+        return vector

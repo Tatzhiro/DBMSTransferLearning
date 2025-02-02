@@ -23,7 +23,7 @@ class TransferLearning(ABC):
     self.base_data_path: str = base_data_path
     self.target_data_path: str = target_data_path
 
-    self.kernel = Sum(Matern(), ConstantKernel())
+    self.kernel = Matern()
     model = GaussianProcessRegressor(kernel=self.kernel, random_state=0)
     self.model = make_pipeline(StandardScaler(), model)
     
@@ -110,7 +110,7 @@ class Vanilla(TransferLearning):
 class Proposed(TransferLearning):
   def __init__(self, workload, system, base_data_path: str, ref_data_path: str, target_data_path: str, regression_data_threshold=5, regression_rate=0.95) -> None:
     self.distribution_distance = BhattacharyyaDistance()
-    self.distance_threshold = 0.1
+    self.distance_threshold = 0.001
     self.feature_selector = L2SFeatureSelector()
 
 
@@ -140,10 +140,7 @@ class Proposed(TransferLearning):
     self.base_train_data = self.calculate_mean_performance_groupedby_params(self.base_df, self.parameters)
     self.target_data_population = self.calculate_mean_performance_groupedby_params(self.target_df, self.parameters)
 
-    self.regression_data_population = set_unimportant_columns_to_one_value(self.target_data_population, self.machine_independent_parameters, self.system)
-    self.regression = LinearRegression()
-    self.regression_data_samples = pd.DataFrame()
-    self.base_regression_data = set_unimportant_columns_to_one_value(self.base_train_data, self.machine_independent_parameters, self.system)
+    self.init_regression_data()
 
     machine_dependent_params = [param for param in self.parameters if param not in self.machine_independent_parameters]
     self.dependent_param_data_population = set_unimportant_columns_to_one_value(self.target_data_population, machine_dependent_params, self.system)
@@ -157,12 +154,37 @@ class Proposed(TransferLearning):
 
     self.iter = 0
     self.terminated = False
+    
+    print(f"Machine independent parameters: {self.machine_independent_parameters}")
+    print(f"Machine dependent parameters: {machine_dependent_params}")
+    
+  def calculate_mean_performance_groupedby_params(self, df: DataFrame, parameters: list[str]) -> DataFrame:
+    df = set_unimportant_columns_to_one_value(df, parameters, self.system)
+    df = df.groupby(self.system.get_param_names())[self.system.get_perf_metric()].mean().reset_index()
+    return df
+    
+  def init_regression_data(self):
+    self.regression = LinearRegression()
+    self.regression_data_samples = pd.DataFrame()
+    
+    if len(self.machine_independent_parameters) == 0: 
+      self.non_important_params = [param for param in self.system.get_param_names() if param not in self.parameters]
+      
+      # average the data for same parameters
+      self.base_regression_data = self.calculate_mean_performance_groupedby_params(self.base_df, self.system.get_param_names())
+      self.regression_data_population = self.calculate_mean_performance_groupedby_params(self.target_df, self.system.get_param_names())
+      
+      self.regression_data_population = set_unimportant_columns_to_one_value(self.regression_data_population, self.non_important_params, self.system)
+      self.base_regression_data = set_unimportant_columns_to_one_value(self.base_regression_data, self.non_important_params, self.system)
+    else:
+      self.regression_data_population = set_unimportant_columns_to_one_value(self.target_data_population, self.machine_independent_parameters, self.system)
+      self.base_regression_data = set_unimportant_columns_to_one_value(self.base_train_data, self.machine_independent_parameters, self.system)
 
   def run_next_iteration(self) -> None:
     sample_for_linear_coef = epsilon_greedy(self.rr)
     if sample_for_linear_coef:
       self.update_shift_coefficient()
-      if len(self.regression_data_samples) == self.rthreshold:
+      if len(self.regression_data_samples) == self.rthreshold and self.rr > 0:
         self.rr = (1 - self.rr)
     else:
       self.update_train_buffer()
@@ -179,9 +201,15 @@ class Proposed(TransferLearning):
   def fit(self) -> None:
     base_train_data = deepcopy(self.base_train_data)
     if len(self.regression_data_samples) > 2 and len(base_train_data) > 0:
-      base_train_data = set_unimportant_columns_to_one_value(base_train_data, self.machine_independent_parameters, self.system)
+      
+      # select parameters that should be linearly transformed
+      if len(self.machine_independent_parameters) > 0:
+        base_train_data = set_unimportant_columns_to_one_value(base_train_data, self.machine_independent_parameters, self.system)
+        
       base_train_data[self.system.get_perf_metric()] = self.regression.predict(base_train_data.loc[:, [self.system.get_perf_metric()]].values)
-    train_data = pd.concat([base_train_data, self.finetune_data])
+      train_data = pd.concat([base_train_data, self.finetune_data])
+    else:
+      train_data = self.finetune_data
     self.model.fit(train_data[self.parameters], train_data[self.system.get_perf_metric()])
 
   def update_shift_coefficient(self) -> None:
@@ -192,18 +220,29 @@ class Proposed(TransferLearning):
         return
       
       sampled_row = self.regression_data_population.sample(n=1, random_state=self.seed)
-      matching_row = self.base_train_data[self.base_train_data[self.parameters].eq(sampled_row[self.parameters].iloc[0]).all(axis=1)].index
       self.regression_data_population = self.regression_data_population.drop(sampled_row.index)
+      
+      # break immediately if regression data do not depend on base_train_data
+      if len(self.machine_independent_parameters) == 0:
+        break
+      
+      # sampled_row may have been already sampled in update_train_buffer function
+      matching_row = self.base_train_data[self.base_train_data[self.parameters].eq(sampled_row[self.parameters].iloc[0]).all(axis=1)].index
       if not matching_row.empty:
+        # drop the matching row from base_train_data and add it to finetune_data
+        self.base_train_data = self.base_train_data.drop(matching_row)
         break
 
-    # drop the matching row from base_train_data and add it to finetune_data
-    self.base_train_data = self.base_train_data.drop(matching_row)
     self.finetune_data = pd.concat([self.finetune_data, sampled_row])
       
     self.regression_data_samples = pd.concat([self.regression_data_samples, sampled_row])
 
-    correlation_df = pd.merge(self.base_regression_data, self.regression_data_samples, on=self.machine_independent_parameters)
+    if len(self.machine_independent_parameters) > 0:
+      merge_param = self.machine_independent_parameters 
+    else:
+      merge_param = self.non_important_params
+      
+    correlation_df = pd.merge(self.base_regression_data, self.regression_data_samples, on=merge_param)
     if len(self.regression_data_samples) < len(correlation_df): raise UserWarning("Duplicate sampling")
     self.regression.fit(correlation_df.loc[:, [f"{self.system.get_perf_metric()}_x"]].values, correlation_df[f"{self.system.get_perf_metric()}_y"])
     # print(f"coef_: {self.regression.coef_}, intercept_: {self.regression.intercept_}")
@@ -220,8 +259,12 @@ class Proposed(TransferLearning):
         sampled_row = self.target_data_population.sample(n=1, random_state=self.seed)
         self.target_data_population = self.target_data_population.drop(sampled_row.index)
       else:
-        sampled_row = self.dependent_param_data_population.sample(n=1, random_state=self.seed)
+        sample_param = self.feature_selector.select_parameter_to_sample()
+        target_data_population = deepcopy(self.dependent_param_data_population)
+        param_population = set_unimportant_columns_to_one_value(target_data_population, [sample_param], self.system)
+        sampled_row = param_population.sample(n=1, random_state=self.seed)
         self.dependent_param_data_population = self.dependent_param_data_population.drop(sampled_row.index)
+        
       
       duplicate = self.finetune_data[self.finetune_data.eq(sampled_row.iloc[0]).all(axis=1)]
       if len(duplicate) == 0:
