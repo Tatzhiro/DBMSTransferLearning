@@ -10,8 +10,10 @@ from sklearn.model_selection import train_test_split
 import wandb
 from matplotlib import pyplot as plt
 import os
+from IPython import embed
+import glob
 
-from system_configuration import SystemConfiguration
+from system_configuration import SystemConfiguration, MySQLConfiguration
 
 parameter_metadata = ["innodb_buffer_pool_size", "innodb_read_io_threads", "innodb_write_io_threads", 
                    "innodb_flush_log_at_trx_commit", "innodb_adaptive_hash_index", "sync_binlog",
@@ -57,25 +59,26 @@ class Agent:
     def __init__(self, system_configuration):
         self.feature_columns = None
         self.system = system_configuration
+        self.scaler = MinMaxScaler()
     
     def train_model(self, workload_label, hardware_label):
         
         data = pd.read_csv("dataset/metric_learning/train.csv")
         data = data.drop(data.columns[data.isnull().any()], axis=1)
+        data['hardware_label'] = data.apply(lambda row: f"{row['num_cpu']}-{row['mem_size']}", axis=1)
+        data = data[data["hardware_label"] != hardware_label]
+        data = data[data['workload_label'] != workload_label]
         
         # Data Preprocessing
         # Split the input features and the target label
-        features = data.drop(columns=['label', 'workload_label'])
+        features = data.drop(columns=['label', 'workload_label', 'hardware_label'])
         self.feature_columns = features.columns
         labels = data['label'].apply(lambda x: np.fromstring(x.strip('[]'), sep=' '))
 
-        scaler = MinMaxScaler()
 
-        normalized_features = pd.DataFrame(scaler.fit_transform(features), columns=self.feature_columns)
+        normalized_features = pd.DataFrame(self.scaler.fit_transform(features), columns=self.feature_columns, index=features.index)
         # Recombine the normalized features with the label column
-        data = pd.concat([normalized_features, labels, data['workload_label']], axis=1)
-        train_data = data[data['workload_label'] != workload_label]
-        train_data = train_data[train_data["hardware_label"] != hardware_label]
+        train_data = pd.concat([normalized_features, labels], axis=1)
         
         wandb.init(
             project="AutoDB",
@@ -103,7 +106,7 @@ class Agent:
         num_epochs = wandb.config.num_epochs
 
         
-        train_dataset = CustomDataset(train_data.drop(columns=['workload_label', 'label', 'hardware_label']).values, np.vstack(train_data['label'].values))
+        train_dataset = CustomDataset(train_data.drop(columns=['label']).values, np.vstack(train_data['label'].values), device)
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         # Instantiate the model
         model = VectorPredictor(input_size, num_hidden_layer, hidden_size, output_size).to(device)
@@ -136,24 +139,25 @@ class Agent:
         
         model = self.train_model(workload_label, hardware_label)
         
+        path = "dataset/transfer_learning/mysql/merge"
         # get all the csv files in dataset/metric_learning
-        files = os.listdir("dataset/metric_learning")
-        files = [f for f in files if f.endswith(".csv")]
-        dfs = [pd.read_csv(df) for df in files if df != "train.csv"]
+        files = glob.glob(path + "/*.csv")
+        dfs = [pd.read_csv(f) for f in files if "train.csv" not in f]
         
             
         model.eval()
         with torch.no_grad():
             target_input = target_input[self.feature_columns]
             
-            scaler = MinMaxScaler()
-            target_input = pd.DataFrame(scaler.fit_transform(target_input), columns=self.feature_columns)
+            target_input = pd.DataFrame(self.scaler.transform(target_input), columns=self.feature_columns)
+            target_input = torch.tensor(target_input.values, dtype=torch.float32).to(device)
             target_output = model(target_input)
             target_output_np = target_output.cpu().numpy()
             
             similarities = []
             for df in dfs:
-                hardware = f"{df["num_cores"][0]}-{df["memory_size"][0]}"
+                hardware = f"{df["num_cpu"][0]}-{df["mem_size"][0]}"
+                df = self.system.preprocess_param_values(df)
                 if hardware == hardware_label:
                     continue
                 df = df.drop(df.columns[df.isnull().any()], axis=1)
@@ -166,17 +170,37 @@ class Agent:
                     data = data.drop(data.columns[data.isnull().any()], axis=1)
                     for param in self.system.get_param_names():
                         data = data[data[param] == self.system.get_default_param_values()[param]]
-                    features = data[self.feature_columns]
-                    input_data = pd.DataFrame(scaler.fit_transform(features), columns=self.feature_columns)
+                    sample = data.iloc[[1]]
+                    features = sample[self.feature_columns]
+                    input_data = pd.DataFrame(self.scaler.transform(features), columns=self.feature_columns)
+                    input_data = torch.tensor(input_data.values, dtype=torch.float32).to(device)
                     output = model(input_data)
                     output_np = output.cpu().numpy()
-                    similarity = np.dot(target_output_np, output_np) / (np.linalg.norm(target_output_np) * np.linalg.norm(output_np))
+                    similarity = np.dot(target_output_np, output_np.T) / (np.linalg.norm(target_output_np) * np.linalg.norm(output_np))
                     similarities.append((data, workload, hardware, similarity))
         
         similarities = sorted(similarities, key=lambda x: x[3], reverse=True)
+        for s in similarities:
+            print(s[1], s[2], s[3])
         return similarities[:n]
         
         
     
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using device: {device}")
+
+agent = Agent(MySQLConfiguration())
+
+target_input = pd.read_csv("dataset/transfer_learning/mysql/merge/88c190g-result_rw.csv")
+workloads = target_input['workload_label'].unique()
+target_input = target_input[target_input['workload_label'] == workloads[0]]
+print(workloads[0])
+hardware = f"{target_input['num_cpu'][0]}-{target_input['mem_size'][0]}"
+target_input = agent.system.preprocess_param_values(target_input)
+
+for param in agent.system.get_param_names():
+    target_input = target_input[target_input[param] == agent.system.get_default_param_values()[param]]
+    
+# get second sample
+# use the second sample because the first sample might be not ready
+similar_datasets = agent.get_similar_datasets(target_input.iloc[[1]], workloads[0], hardware)
