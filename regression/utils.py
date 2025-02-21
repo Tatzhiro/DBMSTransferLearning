@@ -51,7 +51,7 @@ def read_data_csv(filename: str, system: SystemConfiguration, workload: str):
     if workload == "None":
         df = df[system.get_param_names() + [system.get_perf_metric()]]
     else:
-        df = df[df["workload"] == workload][system.get_param_names() + [system.get_perf_metric()]]
+        df = df[df.get("workload", df["workload_label"]) == workload][system.get_param_names() + [system.get_perf_metric()]]
     return df
 
 

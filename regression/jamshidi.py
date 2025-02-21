@@ -208,3 +208,46 @@ class L2SFeatureSelector(FeatureSelector):
             else:
                 vector[i] = 0
         return vector
+    
+
+class ImportanceFeatureSelector(FeatureSelector):
+    def select_important_features(self, df: pd.DataFrame, system: SystemConfiguration) -> None:
+        self.df = df
+        self.system = system
+        self.vector = self.get_parameter_vector()
+        threshold = 1 / len(self.system.get_param_names())
+        self.important_params = [p for p, v in zip(self.system.get_param_names(), self.vector) if v > threshold]
+        return self.important_params
+    
+    def get_parameter_importance(self):
+        raise NotImplementedError("FeatureImportance does not have parameter importance")
+    
+    
+    def select_parameter_to_sample(self):
+        importance_vector = deepcopy(self.vector)
+        for i, p in enumerate(self.system.get_param_names()):
+            if p not in self.important_params:
+                importance_vector[i] = 0
+        # renormalize
+        importance_vector = importance_vector / np.sum(importance_vector)
+        return np.random.choice(self.system.get_param_names(), p=importance_vector)
+
+        
+    def get_range(self, df: pd.DataFrame):
+        min = df[self.system.get_perf_metric()].min()
+        max = df[self.system.get_perf_metric()].max()
+        return max - min
+        
+    
+    def get_parameter_vector(self):
+        vector = np.zeros(len(self.system.get_param_names()))
+        
+        self.df = self.system.preprocess_param_values(self.df)
+        
+        for i, p in enumerate(self.system.get_param_names()):
+            df = drop_unimportant_parameters(self.df, [p], self.system)
+            range = self.get_range(df)
+            vector[i] = range
+        
+        vector = vector / np.sum(vector)
+        return vector

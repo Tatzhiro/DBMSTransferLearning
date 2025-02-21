@@ -1,6 +1,6 @@
 from pandas import DataFrame
 import pandas as pd
-from graph import getNumCore, getMemSize
+from regression.graph import getNumCore, getMemSize
 from abc import ABC, abstractmethod
 from IPython import embed
 
