@@ -30,10 +30,18 @@ class InstanceSimilarity(ABC):
         pass
 
 
+import glob
+import os
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import FactorAnalysis
+from sklearn.cluster import KMeans
+from typing import List, Dict
+
 class OtterTuneSimilarity(InstanceSimilarity):
     """
     Finds similar datasets by pruning metrics (via FactorAnalysis) and comparing 
-    Euclidean distances in the pruned metric space.
+    Euclidean distances in the pruned metric space, with OtterTune-style decile binning.
     """
     _distinct_metrics = None
 
@@ -116,7 +124,7 @@ class OtterTuneSimilarity(InstanceSimilarity):
     def get_similar_datasets(self, target_data_path, workload_label=None, n=2, metadata=False) -> list:
         """
         Given a target CSV, finds n most similar datasets based on pruned metrics 
-        and Euclidean distance in that metric space.
+        (decile-binned) and Euclidean distance in that space.
         """
         # Read target data
         target_df = pd.read_csv(target_data_path)
@@ -138,54 +146,126 @@ class OtterTuneSimilarity(InstanceSimilarity):
 
         # Focus only on the pruned metrics
         valid_metrics = [m for m in self.distinct_metrics if m in target_df.columns]
-        target_df = target_df[valid_metrics]
-
-        # Use a single row as the reference
+        # If no valid target rows exist, raise an error
         if len(target_df) == 0:
             raise ValueError("No valid target rows found after preprocessing and param filtering.")
-        target_metrics = target_df.iloc[[0]]  # pick the first row or whichever row you prefer
 
-        # Load candidate files
+        # We'll compare using the first row as the target
+        target_metrics = target_df.iloc[[0]][valid_metrics].copy()
+
+        # -----------------------------------------
+        # 1) LOAD CANDIDATE DATA
+        # -----------------------------------------
         csv_files = glob.glob(os.path.join(self.data_dir, "*.csv"))
         dfs = []
         for file_path in csv_files:
             if "train.csv" in file_path or "88c190g" in file_path:
                 continue
-            dfs.append(pd.read_csv(file_path))
-
-        similarities = []
+            df = pd.read_csv(file_path)
+            dfs.append(df)
+            
+        candidate_dfs = []
         for df in dfs:
+            # Skip same hardware
             file_hardware = f"{df['num_cpu'].iloc[0]}-{df['mem_size'].iloc[0]}"
             if file_hardware == hardware_label:
-                # Skip same hardware
                 continue
-            # Preprocess
-            df = self.system.preprocess_param_values(df)
-            df = df.drop(columns=df.columns[df.isnull().any()], errors="ignore")
 
+            df = self.system.preprocess_param_values(df)
+            # Drop NaN columns
+            df = df.drop(columns=df.columns[df.isnull().any()], errors="ignore")
+           
             workloads = df['workload_label'].unique()
             for wl in workloads:
                 if wl == workload_label:
                     continue
-                data = df[df['workload_label'] == wl]
-                # Keep only relevant metrics
-                data_metrics = data[valid_metrics].values
-                # Euclidean distance between target and the candidate data
-                dist = np.linalg.norm(target_metrics.values - data_metrics)
-                similarities.append((data, wl, file_hardware, dist))
 
-        # normalize distances and convert to similarity scores
-        max_dist = max([s[3] for s in similarities])
-        similarities = [(s[0], s[1], s[2], 1 - s[3] / max_dist) for s in similarities]
+                data = df[df['workload_label'] == wl]
+                if data.empty:
+                    continue
+
+                candidate_dfs.append((data, file_hardware, wl))
+                
+        # -----------------------------------------
+        # 2) COMBINE TARGET + CANDIDATES TO COMPUTE DECILES
+        # -----------------------------------------
+        # Build one combined DataFrame (only the columns we need for binning).
+        # We'll then apply those binning edges to each dataset individually.
+        combined_df = pd.concat([target_metrics] + [d[0][valid_metrics] for d in candidate_dfs], ignore_index=True)
+
+        # Compute decile bin edges for each metric
+        bin_edges_dict = self._compute_decile_edges(combined_df, valid_metrics)
+
+        # -----------------------------------------
+        # 4) BIN THE TARGET ROW
+        # -----------------------------------------
+        binned_target = target_metrics.copy()
+        for metric in valid_metrics:
+            edges = bin_edges_dict[metric]
+            # Use np.digitize to map the raw values to bin indices [1..10]
+            binned_target[metric] = np.digitize(binned_target[metric], edges, right=True)
+
+        # -----------------------------------------
+        # 5) FOR EACH CANDIDATE, BIN + COMPUTE DISTANCE
+        # -----------------------------------------
+        similarities = []
+        for (data, file_hw, wl) in candidate_dfs:
+            # Binning each row in this candidate segment
+            data_for_dist = data[valid_metrics].copy()
+            for metric in valid_metrics:
+                edges = bin_edges_dict[metric]
+                data_for_dist[metric] = np.digitize(data_for_dist[metric], edges, right=True)
+
+            # Now compute distance (Euclidean) between binned_target and the entire candidate set.
+            # You might decide to average across rows, or just pick the first row, etc.
+            # Below, we flatten them so we can do a direct norm. Another approach is to pick
+            # a single representative row from `data_for_dist`.
             
-        # Sort by similarity
+            # get the single representative row
+            data_for_dist = data_for_dist.iloc[[0]]
+            dist = np.linalg.norm(binned_target.values - data_for_dist.values)
+
+            # We store (data, wl, hardware_label, distance)
+            similarities.append((data, wl, file_hw, dist))
+
+        # -----------------------------------------
+        # 6) CONVERT DISTANCE TO SIMILARITY + SORT
+        # -----------------------------------------
+        if not similarities:
+            return [] if not metadata else []
+
+        max_dist = max(s[3] for s in similarities)
+        # similarity = 1 - dist/max_dist
+        # If max_dist == 0, it means identical data somewhere. Handle that safely:
+        if max_dist == 0:
+            similarities = [(s[0], s[1], s[2], 1.0) for s in similarities]
+        else:
+            similarities = [(s[0], s[1], s[2], 1 - s[3]/max_dist) for s in similarities]
+
         similarities.sort(key=lambda x: x[3], reverse=True)
 
-        
         if metadata:
             return similarities[:n]
         else:
             return [s[0] for s in similarities[:n]]
+
+    # -------------------------------------------------------------------------
+    # HELPER FOR COMPUTING DECILE EDGES
+    # -------------------------------------------------------------------------
+    def _compute_decile_edges(self, df: pd.DataFrame, metrics: List[str]) -> Dict[str, np.ndarray]:
+        """
+        For each metric in `metrics`, compute the bin edges for deciles using the
+        data in `df`. Returns a dict of {metric_name: bin_edges}.
+        """
+        bin_edges_dict = {}
+        for metric in metrics:
+            # Drop NaNs just in case
+            vals = df[metric].dropna().values
+            # 10 deciles => 0%, 10%, 20%, ..., 100%
+            # That gives 11 edges total
+            edges = np.percentile(vals, np.linspace(0, 100, 11))
+            bin_edges_dict[metric] = edges
+        return bin_edges_dict
 
     @staticmethod
     def get_closest_samples_to_centroids(U, kmeans):
@@ -307,10 +387,20 @@ class ParameterImportanceSimilarity:
             )
             self.output = nn.Linear(hidden_size, output_size)
 
+            # Apply weight initialization
+            self._initialize_weights()
+
+        def _initialize_weights(self):
+            for layer in [self.fc1, *self.hidden_layers, self.output]:
+                if isinstance(layer, nn.Linear):
+                    nn.init.kaiming_normal_(layer.weight)
+                    if layer.bias is not None:
+                        nn.init.zeros_(layer.bias)
+
         def forward(self, x):
-            x = F.relu(self.fc1(x))
+            x = F.leaky_relu(self.fc1(x))
             for layer in self.hidden_layers:
-                x = F.relu(layer(x))
+                x = F.leaky_relu(layer(x))
             x = self.output(x)
             # Softmax across dim=1
             x = F.softmax(x, dim=1)
@@ -380,7 +470,12 @@ class ParameterImportanceSimilarity:
         # Filter out data matching hardware_label or workload_label
         data = data[data["hardware_label"] != hardware_label]
         data = data[data['workload_label'] != workload_label]
-
+        # target_workloads = [
+        #     "64-1000000-4-oltp_read_only-0.2",
+        #     "64-1000000-4-oltp_read_only-0.6",
+        #     "64-1000000-4-oltp_read_only-1.0",
+        # ]
+        # data = self.augment_data(data, target_workloads, num_copies=2, noise_scale=0.01)
         # Extract features and labels
         # 'label' is expected to hold a string like "[x y z ...]"
         features = data.drop(columns=['label', 'workload_label', 'hardware_label'], errors="ignore")
@@ -402,7 +497,7 @@ class ParameterImportanceSimilarity:
         config = {
             "input_size": features.shape[1],
             "output_size": np.vstack(labels.values).shape[1] if len(labels) > 0 else 1,
-            "num_hidden_layer": 10,
+            "num_hidden_layer": 30,
             "hidden_size": 128,
             "batch_size": 32,
             "learning_rate": 0.001,
@@ -441,9 +536,38 @@ class ParameterImportanceSimilarity:
 
             epoch_loss = running_loss / len(train_loader.dataset)
             # Optional: print or log epoch_loss if desired
-            # print(f"Epoch [{epoch+1}/{config['num_epochs']}], Loss: {epoch_loss:.4f}")
+            print(f"Epoch [{epoch+1}/{config['num_epochs']}], Loss: {epoch_loss:.4f}")
 
         return model
+    
+    def augment_data(self, data, target_workloads, num_copies=2, noise_scale=0.01):
+        """
+        Augments the input data by adding Gaussian noise to numeric columns.
+        """
+        # Select the rows matching our target workloads
+        mask = data['workload_label'].isin(target_workloads)
+        subset = data[mask].copy()
+
+        # Identify numeric columns to which we will add Gaussian noise
+        numeric_cols = subset.select_dtypes(include=[np.number]).columns
+
+        # We'll collect everything (original + new copies) in a list
+        df_list = [data]  # start with original filtered data
+
+        # Create 2 extra copies (for a total of 3 = original + 2 copies)
+        for _ in range(num_copies):
+            new_rows = subset.copy()
+            # Add Gaussian noise: adjust 'scale' to control amount of variation
+            new_rows[numeric_cols] += np.random.normal(
+                loc=0.0, 
+                scale=noise_scale,   # e.g. 0.01 standard deviation
+                size=new_rows[numeric_cols].shape
+            )
+            df_list.append(new_rows)
+
+        # Recombine them
+        data = pd.concat(df_list, ignore_index=True)
+        
 
     def get_sample(self, target_data_path, workload_label):
         """
@@ -548,6 +672,7 @@ class ParameterImportanceSimilarity:
                     np.linalg.norm(target_output_np) * np.linalg.norm(output_np)
                 )
                 similarities.append((subset, wl, file_hardware, sim, output_np))
+            print(target_output_np)
 
         # Sort descending by similarity
         similarities.sort(key=lambda x: x[3], reverse=True)
@@ -559,8 +684,51 @@ class ParameterImportanceSimilarity:
         else:
             return [s[0] for s in similarities[:n]]
         
+    def loocv(self, target_data_path, workloads):
+        """
+        Leave-one-out cross-validation for the target dataset.
+        """
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        # Load the sample row
 
-def evaluate_similarity(target_csv, workload_label, similar_datasets, system, data_dir):
+        total_errors = 0
+        for workload_label in workloads:
+            target_input = self.get_sample(target_data_path, workload_label)
+            true_output = np.fromstring(target_input.iloc[0]['label'].strip('[]'), sep=' ')
+            hardware_label = f"{target_input['num_cpu'].iloc[0]}-{target_input['mem_size'].iloc[0]}"
+            # Train the model if not already loaded
+            self.model = self.train_model(workload_label, hardware_label)
+
+            # Generate or reuse the target output vector
+            self.model.eval()
+            with torch.no_grad():
+                # Keep only known feature columns
+                input_features = [
+                    col for col in self.feature_columns if col in target_input.columns
+                ]
+                target_input_sub = target_input[input_features]
+
+                # Scale
+                scaled_input = pd.DataFrame(
+                    self.scaler.transform(target_input_sub),
+                    columns=input_features,
+                    index=target_input_sub.index
+                )
+
+                # Convert to tensor and run the model
+                target_tensor = torch.tensor(scaled_input.values, dtype=torch.float32).to(device)
+                target_output = self.model(target_tensor)
+                target_output_np = target_output.cpu().numpy()
+            
+            cosine_similarity = np.dot(true_output, target_output_np.T) / (
+                np.linalg.norm(true_output) * np.linalg.norm(target_output_np)
+            )
+            print(f"Workload: {workload_label}, Cosine Similarity: {cosine_similarity}")
+            total_errors += 1 - cosine_similarity
+        print(f"Average Error: {total_errors / len(workloads)}")
+        
+
+def evaluate_similarity(target_csv, workload_label, similar_datasets, system, data_dir, plot=False):
     """
     Outputs the actual similarity scores and the most similar datasets.
     """
@@ -631,7 +799,8 @@ def evaluate_similarity(target_csv, workload_label, similar_datasets, system, da
         wl, hw, sim, vec = entry
         print(f"Workload: {wl}, Hardware: {hw}, Similarity: {sim}")
     
-    plot_pi(target_output, actual_similarities[:2], system)
+    if plot:
+        plot_pi(target_output, actual_similarities[:2], system)
         
     # Sort descending by similarity
     similarities.sort(key=lambda x: x[2], reverse=True)
@@ -672,42 +841,60 @@ def main():
     """
     data_dir = "dataset/transfer_learning/mysql/chimera_tech"
     target_csv = os.path.join(data_dir, "88c190g-result.csv")
-    workload_label = "100-4-4-tpcc-nan"
-
-    similarity = OtterTuneSimilarity(system=MySQLConfiguration(), data_dir=data_dir)
-    similar_datasets = similarity.get_similar_datasets(
-        target_data_path=target_csv,
-        workload_label=workload_label,
-        n=2,
-        metadata=True
-    )
-    print("\n[OtterTuneSimilarity] Found similar datasets:")
-    for entry in similar_datasets:
-        df, wl, hw, sim = entry
-        print(f"Workload: {wl}, Hardware: {hw}, Similarity: {sim}")
+    workloads = [
+        "64-1000000-4-oltp_read_only-0.2",
+        "64-1000000-4-oltp_read_only-0.6",
+        "64-1000000-4-oltp_write_only-0.2",
+        "64-1000000-4-oltp_write_only-0.6",
+        "64-1000000-4-oltp_read_write_50-0.2",
+        "64-1000000-4-oltp_read_write_50-0.6",
+        "10-4-4-tpcc-nan",
+        "100-4-4-tpcc-nan",
         
-    # Evaluate similarity scores
-    evaluate_similarity(target_csv, workload_label, similar_datasets, MySQLConfiguration(), data_dir)
-
-    # Example usage of ParameterImportanceSimilarity
+    ]
+    
     param_similarity = ParameterImportanceSimilarity(
         system=MySQLConfiguration(),
         data_dir=data_dir,
         train_dir="dataset/metric_learning"
     )
-    similar_datasets_param = param_similarity.get_similar_datasets(
-        target_data_path=target_csv,
-        workload_label=workload_label,
-        n=2,
-        metadata=True
-    )
-    print("\n[ParameterImportanceSimilarity] Found similar datasets (metadata):")
-    for entry in similar_datasets_param:
-        df, wl, hw, sim, vec = entry
-        print(f"Workload: {wl}, Hardware: {hw}, Similarity: {sim}")
-        
-    # Evaluate similarity scores
-    evaluate_similarity(target_csv, workload_label, similar_datasets_param, MySQLConfiguration(), data_dir)
+    param_similarity.loocv(target_csv, workloads)
+    ottertune_similarity = OtterTuneSimilarity(system=MySQLConfiguration(), data_dir=data_dir)
+    
+    
+    for workload_label in workloads:
+        print(f"Target CSV: {target_csv}, Workload: {workload_label}")
+
+        ottertune_similarity.distinct_metrics = None
+        similar_datasets = ottertune_similarity.get_similar_datasets(
+            target_data_path=target_csv,
+            workload_label=workload_label,
+            n=2,
+            metadata=True
+        )
+        print("\n[OtterTuneSimilarity] Found similar datasets:")
+        for entry in similar_datasets:
+            df, wl, hw, sim = entry
+            print(f"Workload: {wl}, Hardware: {hw}, Similarity: {sim}")
+            
+        # Evaluate similarity scores
+        evaluate_similarity(target_csv, workload_label, similar_datasets, MySQLConfiguration(), data_dir)
+
+        # Example usage of ParameterImportanceSimilarity
+        param_similarity.model = None
+        similar_datasets_param = param_similarity.get_similar_datasets(
+            target_data_path=target_csv,
+            workload_label=workload_label,
+            n=2,
+            metadata=True
+        )
+        print("\n[ParameterImportanceSimilarity] Found similar datasets (metadata):")
+        for entry in similar_datasets_param:
+            df, wl, hw, sim, vec = entry
+            print(f"Workload: {wl}, Hardware: {hw}, Similarity: {sim}")
+            
+        # Evaluate similarity scores
+        evaluate_similarity(target_csv, workload_label, similar_datasets_param, MySQLConfiguration(), data_dir)
     
 
 
