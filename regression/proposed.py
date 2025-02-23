@@ -162,7 +162,7 @@ class Proposed(TransferLearning):
     self.machine_independent_parameters = self.extract_machine_independent_parameters(self.parameters)
 
     self.base_train_data = self.calculate_mean_performance_groupedby_params(self.base_df, self.parameters)
-    self.target_data_population = self.calculate_mean_performance_groupedby_params(self.target_df, self.parameters)
+    self.target_data_population = self.calculate_mean_performance_groupedby_params(self.target_df, self.system.get_param_names())
 
     self.init_regression_data()
 
@@ -224,7 +224,7 @@ class Proposed(TransferLearning):
       train_data = pd.concat([base_train_data, self.finetune_data])
     else:
       train_data = self.finetune_data
-    self.model.fit(train_data[self.parameters], train_data[self.system.get_perf_metric()])
+    self.model.fit(train_data[self.system.get_param_names()], train_data[self.system.get_perf_metric()])
 
   def update_shift_coefficient(self) -> None:
     merge_param = self.machine_independent_parameters 
@@ -292,7 +292,7 @@ class Proposed(TransferLearning):
 
   def predict(self, df: DataFrame) -> float:
     df = self.system.preprocess_param_values(df)
-    return self.model.predict(df[self.parameters])
+    return self.model.predict(df[self.system.get_param_names()])
   
 
 class ToyChimera(Proposed):
