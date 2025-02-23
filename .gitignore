@@ -3,6 +3,7 @@ myenv
 */__pycache__/
 */out
 old
-.vscode
+.vscode/
 venv
 fig/
+scripts/conf
