@@ -36,5 +36,6 @@ evaluations:
       design:
         _target_: regression.PlotDesign
         x_label: "Mean Absolute Percentage Error (%)"
-        y_label: "Sample Size"
+        y_label: "Sample Size\n(1 sample = 90 sec)"
+        legend_anchor: [1.4, 1.3]
         figsize: [6.4, 4.8]
