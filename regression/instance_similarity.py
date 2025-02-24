@@ -12,6 +12,7 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import FactorAnalysis
 from sklearn.cluster import KMeans
+from scipy.stats import entropy
 from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 
@@ -208,7 +209,7 @@ class OtterTuneSimilarity(InstanceSimilarity):
         # -----------------------------------------
         # 5) FOR EACH CANDIDATE, BIN + COMPUTE DISTANCE
         # -----------------------------------------
-        similarities = []
+        distances = []
         for (data, file_hw, wl) in candidate_dfs:
             # Binning each row in this candidate segment
             data_for_dist = data[valid_metrics].copy()
@@ -226,28 +227,14 @@ class OtterTuneSimilarity(InstanceSimilarity):
             dist = np.linalg.norm(binned_target.values - data_for_dist.values)
 
             # We store (data, wl, hardware_label, distance)
-            similarities.append((data, wl, file_hw, dist))
+            distances.append((data, wl, file_hw, dist))
 
-        # -----------------------------------------
-        # 6) CONVERT DISTANCE TO SIMILARITY + SORT
-        # -----------------------------------------
-        if not similarities:
-            return [] if not metadata else []
-
-        max_dist = max(s[3] for s in similarities)
-        # similarity = 1 - dist/max_dist
-        # If max_dist == 0, it means identical data somewhere. Handle that safely:
-        if max_dist == 0:
-            similarities = [(s[0], s[1], s[2], 1.0) for s in similarities]
-        else:
-            similarities = [(s[0], s[1], s[2], 1 - s[3]/max_dist) for s in similarities]
-
-        similarities.sort(key=lambda x: x[3], reverse=True)
+        distances.sort(key=lambda x: x[3], reverse=False)
 
         if metadata:
-            return similarities[:n]
+            return distances[:n]
         else:
-            return [s[0] for s in similarities[:n]]
+            return [s[0] for s in distances[:n]]
 
     # -------------------------------------------------------------------------
     # HELPER FOR COMPUTING DECILE EDGES
@@ -394,14 +381,16 @@ class ParameterImportanceSimilarity:
                     if layer.bias is not None:
                         nn.init.zeros_(layer.bias)
 
-        def forward(self, x):
+        def forward(self, x, give_logit=False):
             x = F.leaky_relu(self.fc1(x))
             for layer in self.hidden_layers:
                 x = F.leaky_relu(layer(x))
-            x = self.output(x)
+            logit = self.output(x)
+            if give_logit:
+                return logit
             # Softmax across dim=1
-            x = F.softmax(x, dim=1)
-            return x
+            prob = F.softmax(logit, dim=1)
+            return prob
 
     def __init__(self, system, data_dir: str, train_dir: str, seed: int = 42):
         self.system = system
@@ -536,7 +525,7 @@ class ParameterImportanceSimilarity:
             output_size
         ).to(device)
 
-        criterion = nn.MSELoss()
+        criterion = nn.KLDivLoss(reduction='batchmean')
         optimizer = optim.Adam(
             model.parameters(),
             lr=config["learning_rate"],
@@ -548,8 +537,9 @@ class ParameterImportanceSimilarity:
             running_loss = 0.0
             for inputs, targets in train_loader:
                 optimizer.zero_grad()
-                outputs = model(inputs)
-                loss = criterion(outputs, targets)
+                logits = model(inputs, give_logit=True)
+                log_probs = F.log_softmax(logits, dim=1)
+                loss = criterion(log_probs, targets)
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item() * inputs.size(0)
@@ -591,23 +581,6 @@ class ParameterImportanceSimilarity:
         if len(target_df) < 2:
             raise ValueError("Not enough rows after filtering on default param values.")
         return target_df.iloc[[1]]
-
-    # NEW: Utility for Mahalanobis distance
-    def mahalanobis_distance(self, x: np.ndarray, y: np.ndarray) -> float:
-        """
-        x, y: 1D vectors of the same dimensionality.
-        returns: scalar distance
-        """
-        if self.label_cov_inv is None:
-            # If there's no covariance info (e.g., not enough data), fallback
-            # to e.g. Euclidean or just return 0. Or raise an error.
-            diff = x - y
-            return float(np.sqrt(np.sum(diff**2)))  # fallback: Euclidean
-
-        diff = x - y
-        # (1 x d) @ (d x d) @ (d x 1) => scalar
-        dist_sq = diff @ self.label_cov_inv @ diff.T
-        return float(np.sqrt(dist_sq))
 
     def get_similar_datasets(
         self, 
@@ -656,7 +629,7 @@ class ParameterImportanceSimilarity:
                 continue
             dfs.append(pd.read_csv(file_path))
 
-        similarities = []
+        divergences = []
         for df in dfs:
             file_hardware = f"{df['num_cpu'].iloc[0]}-{df['mem_size'].iloc[0]}"
             if file_hardware == hardware_label:
@@ -678,20 +651,18 @@ class ParameterImportanceSimilarity:
                 except:
                     continue
 
-                # NEW: Mahalanobis distance
-                d_mah = self.mahalanobis_distance(target_output_np.flatten(), output_np)
-                # Convert distance to similarity measure
-                sim = 1.0 / (1.0 + d_mah)
+                # Information lost when we use surrogate data for the target output
+                kl_div = entropy(target_output_np.flatten(), output_np)
 
-                similarities.append((subset, wl, file_hardware, sim, output_np))
+                divergences.append((subset, wl, file_hardware, kl_div, output_np))
 
-        # Sort descending by sim => "most similar" = highest similarity
-        similarities.sort(key=lambda x: x[3], reverse=True)
+        # Sort ascending by divergence
+        divergences.sort(key=lambda x: x[3], reverse=False)
 
         if metadata:
-            return similarities[:n]
+            return divergences[:n]
         else:
-            return [s[0] for s in similarities[:n]]
+            return [s[0] for s in divergences[:n]]
 
         
     def loocv(self, target_data_path, workloads):
@@ -730,18 +701,14 @@ class ParameterImportanceSimilarity:
                 target_tensor = torch.tensor(scaled_input.values, dtype=torch.float32).to(device)
                 target_output = self.model(target_tensor)
                 target_output_np = target_output.cpu().numpy()
-                
-            d_mah = self.mahalanobis_distance(true_output, target_output_np)
-                # Convert distance to similarity measure
-            sim = 1.0 / (1.0 + d_mah)
             
-            error = 1 - sim
-            print(f"Workload: {workload_label}, error: {error}")
-            result[workload_label] = error
-            total_errors += error
-        average_error = total_errors / len(workloads)
-        print(f"Average Error: {average_error}")
-        return average_error, result
+            kl_div = entropy(true_output, target_output_np.flatten())
+            print(f"Workload: {workload_label}, kl_div: {kl_div}")
+            result[workload_label] = kl_div
+            total_errors += kl_div
+        average_div = total_errors / len(workloads)
+        print(f"Average kl_div: {average_div}")
+        return average_div, result
         
 
 def evaluate_similarity(target_csv, workload_label, similar_datasets, system, data_dir, plot=False):
@@ -775,8 +742,8 @@ def evaluate_similarity(target_csv, workload_label, similar_datasets, system, da
         dfs.append(pd.read_csv(file_path))
         
         
-    similarities = []
-    actual_similarities = []
+    divergences = []
+    actual_divergences = []
     similar_context = [(entry[1], entry[2]) for entry in similar_datasets]
     for df in dfs:
         file_hardware = f"{df['num_cpu'].iloc[0]}-{df['mem_size'].iloc[0]}"
@@ -801,29 +768,26 @@ def evaluate_similarity(target_csv, workload_label, similar_datasets, system, da
             except:
                 continue
 
-            # Cosine similarity
-            sim = np.dot(target_output, output_np.T) / (
-                np.linalg.norm(target_output) * np.linalg.norm(output_np)
-            )
-            similarities.append((wl, file_hardware, sim, output_np))
+            kl_div = entropy(target_output, output_np)
+            divergences.append((wl, file_hardware, kl_div, output_np))
             
             if (wl, file_hardware) in similar_context:
-                actual_similarities.append((wl, file_hardware, sim, output_np))
+                actual_divergences.append((wl, file_hardware, kl_div, output_np))
 
     print("\n[Actual Similarities]")
-    for entry in actual_similarities:
-        wl, hw, sim, vec = entry
-        print(f"Workload: {wl}, Hardware: {hw}, Similarity: {sim}")
+    for entry in actual_divergences:
+        wl, hw, kl_div, vec = entry
+        print(f"Workload: {wl}, Hardware: {hw}, KL Divergence: {kl_div}")
     
-    # Sort descending by similarity
-    similarities.sort(key=lambda x: x[2], reverse=True)
+    # Sort ascending by divergence
+    divergences.sort(key=lambda x: x[2], reverse=False)
     print("\n[Actual Similar Datasets]")
-    for entry in similarities[:2]:
-        wl, hw, sim, vec = entry
-        print(f"Workload: {wl}, Hardware: {hw}, Similarity: {sim}")
+    for entry in divergences[:2]:
+        wl, hw, kl_div, vec = entry
+        print(f"Workload: {wl}, Hardware: {hw}, KL Divergence: {kl_div}")
         
     if plot:
-        plot_pi(target_output, similarities[:2] + actual_similarities[:2], system, workload_label)
+        plot_pi(target_output, divergences[:2] + actual_divergences[:2], system, workload_label)
     
     
 def plot_pi(target_output, similar_datasets, system, workload_label):
@@ -891,7 +855,7 @@ def main():
         print("\n[OtterTuneSimilarity] Found similar datasets:")
         for entry in similar_datasets:
             df, wl, hw, sim = entry
-            print(f"Workload: {wl}, Hardware: {hw}, Similarity: {sim}")
+            print(f"Workload: {wl}, Hardware: {hw}, Euclidean Distance: {sim}")
             
         # Evaluate similarity scores
         evaluate_similarity(target_csv, workload_label, similar_datasets, MySQLConfiguration(), data_dir)
