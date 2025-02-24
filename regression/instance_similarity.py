@@ -355,23 +355,21 @@ class OtterTuneSimilarity(InstanceSimilarity):
 class ParameterImportanceSimilarity:
     """
     Finds similar datasets by learning a neural net that maps database metrics 
-    to important parameter vectors, then comparing these vectors (e.g., via cosine similarity).
+    to important parameter vectors, then comparing these vectors (e.g., via Mahalanobis distance).
     """
     _model = None
     _feature_columns = None
     _scaler = MinMaxScaler()
+    
+    # NEW: We'll store inverse covariance of labels here
+    _label_cov_inv = None
 
     class CustomDataset(Dataset):
-        """
-        Custom PyTorch Dataset for input -> (label) vector regression.
-        """
         def __init__(self, inputs, targets, device='cpu'):
             self.inputs = torch.tensor(inputs, dtype=torch.float32).to(device)
             self.targets = torch.tensor(targets, dtype=torch.float32).to(device)
-        
         def __len__(self):
             return len(self.inputs)
-        
         def __getitem__(self, idx):
             return self.inputs[idx], self.targets[idx]
 
@@ -387,7 +385,6 @@ class ParameterImportanceSimilarity:
             )
             self.output = nn.Linear(hidden_size, output_size)
 
-            # Apply weight initialization
             self._initialize_weights()
 
         def _initialize_weights(self):
@@ -406,14 +403,7 @@ class ParameterImportanceSimilarity:
             x = F.softmax(x, dim=1)
             return x
 
-    def __init__(self, system: MySQLConfiguration, data_dir: str, train_dir: str, seed: int = 42):
-        """
-        Parameters
-        ----------
-        system : MySQLConfiguration
-        data_dir : str
-            Directory containing CSV files for metric learning (e.g. train.csv).
-        """
+    def __init__(self, system, data_dir: str, train_dir: str, seed: int = 42):
         self.system = system
         self.data_dir = data_dir
         self.train_dir = train_dir
@@ -422,33 +412,34 @@ class ParameterImportanceSimilarity:
 
     @property
     def model(self):
-        """Model getter."""
         return ParameterImportanceSimilarity._model
 
     @model.setter
     def model(self, val):
-        """Model setter."""
         ParameterImportanceSimilarity._model = val
 
     @property
     def feature_columns(self):
-        """Feature columns getter."""
         return ParameterImportanceSimilarity._feature_columns
 
     @feature_columns.setter
     def feature_columns(self, val):
-        """Feature columns setter."""
         ParameterImportanceSimilarity._feature_columns = val
 
     @property
     def scaler(self):
-        """Scaler getter."""
         return ParameterImportanceSimilarity._scaler
-    
+
+    # NEW: Covariance inverse getter/setter
+    @property
+    def label_cov_inv(self):
+        return ParameterImportanceSimilarity._label_cov_inv
+
+    @label_cov_inv.setter
+    def label_cov_inv(self, val):
+        ParameterImportanceSimilarity._label_cov_inv = val
+
     def set_hyper_parameters(self, config):
-        """
-        Sets the hyperparameters for the neural network.
-        """
         self.config = config
     
     def set_seed(self, seed=42):
@@ -461,14 +452,15 @@ class ParameterImportanceSimilarity:
 
     def train_model(self, workload_label, hardware_label):
         """
-        Trains a neural network on 'train.csv' in self.train_dir, excluding data that 
+        Trains a neural network on 'train.csv', excluding data that 
         matches the provided workload_label or hardware_label.
+        Also computes and stores the label covariance inverse for Mahalanobis.
         """
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        EPS = 1e-7
+        
         train_path = os.path.join(self.train_dir, "train.csv")
-
         data = pd.read_csv(train_path)
-        # Drop columns with NaNs
         data = data.drop(columns=data.columns[data.isnull().any()], errors="ignore")
 
         data['hardware_label'] = data.apply(
@@ -477,22 +469,17 @@ class ParameterImportanceSimilarity:
         # Filter out data matching hardware_label or workload_label
         data = data[data["hardware_label"] != hardware_label]
         data = data[data['workload_label'] != workload_label]
-        # target_workloads = [
-        #     "64-1000000-4-oltp_read_only-0.2",
-        #     "64-1000000-4-oltp_read_only-0.6",
-        #     "64-1000000-4-oltp_read_only-1.0",
-        # ]
-        # data = self.augment_data(data, target_workloads, num_copies=2, noise_scale=0.01)
-        # Extract features and labels
-        # 'label' is expected to hold a string like "[x y z ...]"
+
+        # Choose columns as you wish
         columns = [
             "tps",
-            "Average Memory Usage Percentage", # "Total Memory Usage",
-            "InnoDB Buffer Pool Cache Hit Rate", # "InnoDB Buffer Pool (Data Pages)", "InnoDB Buffer Pool (Misc Pages)",
+            "Average Memory Usage Percentage",
+            "InnoDB Buffer Pool Cache Hit Rate",
             "InnoDB Dirty Buffer Pages", 
             "Current QPS (Queries Per Second)",
             "Max CPU Usage (100 - Idle)",
-            "InnoDB Rows Deleted (60s Rate)", "InnoDB Rows Inserted (60s Rate)", "InnoDB Rows Read (60s Rate)", "InnoDB Rows Updated (60s Rate)",
+            "InnoDB Rows Deleted (60s Rate)", "InnoDB Rows Inserted (60s Rate)",
+            "InnoDB Rows Read (60s Rate)", "InnoDB Rows Updated (60s Rate)",
             "Average Disk IOPS (Read)", "Average Disk IOPS (Write)", 
         ]
         features = data[columns]
@@ -500,15 +487,12 @@ class ParameterImportanceSimilarity:
 
         # Convert label string -> np.array
         labels = data['label'].apply(lambda x: np.fromstring(x.strip('[]'), sep=' '))
-
         # Scale features
         normalized_features = pd.DataFrame(
             self.scaler.fit_transform(features),
             columns=self.feature_columns,
             index=features.index
         )
-
-        # Re-combine into a single dataframe if needed
         train_data = pd.concat([normalized_features, labels.rename("label")], axis=1)
 
         config = self.config
@@ -523,12 +507,25 @@ class ParameterImportanceSimilarity:
             }
             
         input_size = features.shape[1]
-        output_size = np.vstack(labels.values).shape[1] if len(labels) > 0 else 1
+        # Build a 2D array of labels
+        label_mat = np.vstack(train_data['label'].values)
+        output_size = label_mat.shape[1] if len(label_mat) > 0 else 1
+
+        # NEW: Compute covariance matrix of label vectors and invert it
+        # We add a small regularization on the diagonal to avoid singular inversions.
+        if len(label_mat) > 1:
+            cov = np.cov(label_mat, rowvar=False)  # shape (d, d)
+            # Add EPS to the diagonal for stability
+            cov += EPS * np.eye(cov.shape[0], dtype=cov.dtype)
+
+            cov_inv = np.linalg.inv(cov)
+            self.label_cov_inv = cov_inv
+        else:
+            self.label_cov_inv = None  # not enough data to form a covariance matrix
 
         # Create PyTorch Dataset
         input_data = train_data.drop(columns=['label']).values
-        target_data = np.vstack(train_data['label'].values)
-        train_dataset = self.CustomDataset(input_data, target_data, device=device)
+        train_dataset = self.CustomDataset(input_data, label_mat, device=device)
         train_loader = DataLoader(train_dataset, batch_size=config["batch_size"], shuffle=True)
 
         # Instantiate the model
@@ -539,11 +536,13 @@ class ParameterImportanceSimilarity:
             output_size
         ).to(device)
 
-        # Define loss & optimizer
         criterion = nn.MSELoss()
-        optimizer = optim.Adam(model.parameters(), lr=config["learning_rate"], weight_decay=config["weight_decay"])
+        optimizer = optim.Adam(
+            model.parameters(),
+            lr=config["learning_rate"],
+            weight_decay=config["weight_decay"]
+        )
 
-        # Training loop
         for epoch in range(config["num_epochs"]):
             model.train()
             running_loss = 0.0
@@ -556,59 +555,59 @@ class ParameterImportanceSimilarity:
                 running_loss += loss.item() * inputs.size(0)
 
             epoch_loss = running_loss / len(train_loader.dataset)
-            # Optional: print or log epoch_loss if desired
             print(f"Epoch [{epoch+1}/{config['num_epochs']}], Loss: {epoch_loss:.4f}")
 
         return model
-    
+
     def augment_data(self, data, target_workloads, num_copies=2, noise_scale=0.01):
         """
         Augments the input data by adding Gaussian noise to numeric columns.
         """
-        # Select the rows matching our target workloads
         mask = data['workload_label'].isin(target_workloads)
         subset = data[mask].copy()
-
-        # Identify numeric columns to which we will add Gaussian noise
         numeric_cols = subset.select_dtypes(include=[np.number]).columns
+        df_list = [data]
 
-        # We'll collect everything (original + new copies) in a list
-        df_list = [data]  # start with original filtered data
-
-        # Create 2 extra copies (for a total of 3 = original + 2 copies)
         for _ in range(num_copies):
             new_rows = subset.copy()
-            # Add Gaussian noise: adjust 'scale' to control amount of variation
             new_rows[numeric_cols] += np.random.normal(
                 loc=0.0, 
-                scale=noise_scale,   # e.g. 0.01 standard deviation
+                scale=noise_scale,
                 size=new_rows[numeric_cols].shape
             )
             df_list.append(new_rows)
-
-        # Recombine them
         data = pd.concat(df_list, ignore_index=True)
-        
 
     def get_sample(self, target_data_path, workload_label):
-        """
-        Loads and preprocesses a single row from the target CSV, matching the 
-        default parameter values for the given workload_label.
-        """
         target_df = pd.read_csv(target_data_path)
         target_df = self.system.preprocess_param_values(target_df)
         target_df = target_df[target_df['workload_label'] == workload_label]
 
-        # Keep only rows that match the default param values
         for param in self.system.get_param_names():
             default_val = self.system.get_default_param_values().get(param)
             if default_val is not None:
                 target_df = target_df[target_df[param] == default_val]
 
-        # Use the second row if the first row might be invalid, etc.
         if len(target_df) < 2:
             raise ValueError("Not enough rows after filtering on default param values.")
         return target_df.iloc[[1]]
+
+    # NEW: Utility for Mahalanobis distance
+    def mahalanobis_distance(self, x: np.ndarray, y: np.ndarray) -> float:
+        """
+        x, y: 1D vectors of the same dimensionality.
+        returns: scalar distance
+        """
+        if self.label_cov_inv is None:
+            # If there's no covariance info (e.g., not enough data), fallback
+            # to e.g. Euclidean or just return 0. Or raise an error.
+            diff = x - y
+            return float(np.sqrt(np.sum(diff**2)))  # fallback: Euclidean
+
+        diff = x - y
+        # (1 x d) @ (d x d) @ (d x 1) => scalar
+        dist_sq = diff @ self.label_cov_inv @ diff.T
+        return float(np.sqrt(dist_sq))
 
     def get_similar_datasets(
         self, 
@@ -619,12 +618,11 @@ class ParameterImportanceSimilarity:
         target_output_np=None
     ) -> list:
         """
-        Retrieves the n most similar datasets by comparing the model outputs 
-        (parameter-importance vectors) via cosine similarity.
+        Retrieves the n "most similar" datasets by comparing the model outputs 
+        (parameter-importance vectors) via *Mahalanobis distance*.
+        We'll convert that distance to similarity = 1 / (1 + distance).
         """
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-        # Load the sample row
         target_input = self.get_sample(target_data_path, workload_label)
         hardware_label = f"{target_input['num_cpu'].iloc[0]}-{target_input['mem_size'].iloc[0]}"
 
@@ -636,45 +634,38 @@ class ParameterImportanceSimilarity:
         if target_output_np is None:
             self.model.eval()
             with torch.no_grad():
-                # Keep only known feature columns
                 input_features = [
                     col for col in self.feature_columns if col in target_input.columns
                 ]
                 target_input_sub = target_input[input_features]
 
-                # Scale
                 scaled_input = pd.DataFrame(
                     self.scaler.transform(target_input_sub),
                     columns=input_features,
                     index=target_input_sub.index
                 )
-
-                # Convert to tensor and run the model
                 target_tensor = torch.tensor(scaled_input.values, dtype=torch.float32).to(device)
                 target_output = self.model(target_tensor)
                 target_output_np = target_output.cpu().numpy()  # shape: (1, output_size)
 
-        # Gather all candidate CSV files
+        # Gather CSV files
         csv_files = glob.glob(os.path.join(self.data_dir, "*.csv"))
         dfs = []
         for file_path in csv_files:
-            # Exclude special files if desired
             if "train.csv" in file_path or "88c190g" in file_path:
                 continue
             dfs.append(pd.read_csv(file_path))
 
-        # Compute similarities
         similarities = []
         for df in dfs:
             file_hardware = f"{df['num_cpu'].iloc[0]}-{df['mem_size'].iloc[0]}"
             if file_hardware == hardware_label:
-                # Skip same hardware
                 continue
 
             df = self.system.preprocess_param_values(df)
             df = df.drop(columns=df.columns[df.isnull().any()], errors="ignore")
-
             workloads = df['workload_label'].unique()
+
             for wl in workloads:
                 if wl == workload_label:
                     continue
@@ -682,28 +673,26 @@ class ParameterImportanceSimilarity:
                 if 'label' not in subset.columns or len(subset) == 0:
                     continue
 
-                # Convert the first row's label to a vector
                 try:
                     output_np = np.fromstring(subset.iloc[0]['label'].strip('[]'), sep=' ')
                 except:
                     continue
 
-                # Cosine similarity
-                sim = np.dot(target_output_np, output_np.T) / (
-                    np.linalg.norm(target_output_np) * np.linalg.norm(output_np)
-                )
-                similarities.append((subset, wl, file_hardware, sim, output_np))
-            print(target_output_np)
+                # NEW: Mahalanobis distance
+                d_mah = self.mahalanobis_distance(target_output_np.flatten(), output_np)
+                # Convert distance to similarity measure
+                sim = 1.0 / (1.0 + d_mah)
 
-        # Sort descending by similarity
+                similarities.append((subset, wl, file_hardware, sim, output_np))
+
+        # Sort descending by sim => "most similar" = highest similarity
         similarities.sort(key=lambda x: x[3], reverse=True)
 
-
-        # Return either raw metadata or just the DataFrames
         if metadata:
             return similarities[:n]
         else:
             return [s[0] for s in similarities[:n]]
+
         
     def loocv(self, target_data_path, workloads):
         """
@@ -741,11 +730,12 @@ class ParameterImportanceSimilarity:
                 target_tensor = torch.tensor(scaled_input.values, dtype=torch.float32).to(device)
                 target_output = self.model(target_tensor)
                 target_output_np = target_output.cpu().numpy()
+                
+            d_mah = self.mahalanobis_distance(true_output, target_output_np)
+                # Convert distance to similarity measure
+            sim = 1.0 / (1.0 + d_mah)
             
-            cosine_similarity = np.dot(true_output, target_output_np.T) / (
-                np.linalg.norm(true_output) * np.linalg.norm(target_output_np)
-            )
-            error = 1 - cosine_similarity
+            error = 1 - sim
             print(f"Workload: {workload_label}, error: {error}")
             result[workload_label] = error
             total_errors += error
