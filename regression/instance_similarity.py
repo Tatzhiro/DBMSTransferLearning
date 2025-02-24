@@ -417,6 +417,7 @@ class ParameterImportanceSimilarity:
         self.system = system
         self.data_dir = data_dir
         self.train_dir = train_dir
+        self.config = None
         self.set_seed(seed)
 
     @property
@@ -443,6 +444,12 @@ class ParameterImportanceSimilarity:
     def scaler(self):
         """Scaler getter."""
         return ParameterImportanceSimilarity._scaler
+    
+    def set_hyper_parameters(self, config):
+        """
+        Sets the hyperparameters for the neural network.
+        """
+        self.config = config
     
     def set_seed(self, seed=42):
         random.seed(seed)
@@ -478,7 +485,17 @@ class ParameterImportanceSimilarity:
         # data = self.augment_data(data, target_workloads, num_copies=2, noise_scale=0.01)
         # Extract features and labels
         # 'label' is expected to hold a string like "[x y z ...]"
-        features = data.drop(columns=['label', 'workload_label', 'hardware_label'], errors="ignore")
+        columns = [
+            "tps",
+            "Average Memory Usage Percentage", # "Total Memory Usage",
+            "InnoDB Buffer Pool Cache Hit Rate", # "InnoDB Buffer Pool (Data Pages)", "InnoDB Buffer Pool (Misc Pages)",
+            "InnoDB Dirty Buffer Pages", 
+            "Current QPS (Queries Per Second)",
+            "Max CPU Usage (100 - Idle)",
+            "InnoDB Rows Deleted (60s Rate)", "InnoDB Rows Inserted (60s Rate)", "InnoDB Rows Read (60s Rate)", "InnoDB Rows Updated (60s Rate)",
+            "Average Disk IOPS (Read)", "Average Disk IOPS (Write)", 
+        ]
+        features = data[columns]
         self.feature_columns = features.columns
 
         # Convert label string -> np.array
@@ -494,15 +511,19 @@ class ParameterImportanceSimilarity:
         # Re-combine into a single dataframe if needed
         train_data = pd.concat([normalized_features, labels.rename("label")], axis=1)
 
-        config = {
-            "input_size": features.shape[1],
-            "output_size": np.vstack(labels.values).shape[1] if len(labels) > 0 else 1,
-            "num_hidden_layer": 30,
-            "hidden_size": 128,
-            "batch_size": 32,
-            "learning_rate": 0.001,
-            "num_epochs": 20
-        }
+        config = self.config
+        if config is None:
+            config = {
+                "batch_size": 256,
+                "hidden_size": 64,
+                "learning_rate": 0.0005,
+                "num_epochs": 30,
+                "num_hidden_layer": 20,
+                "weight_decay": 1e-3
+            }
+            
+        input_size = features.shape[1]
+        output_size = np.vstack(labels.values).shape[1] if len(labels) > 0 else 1
 
         # Create PyTorch Dataset
         input_data = train_data.drop(columns=['label']).values
@@ -512,15 +533,15 @@ class ParameterImportanceSimilarity:
 
         # Instantiate the model
         model = self.VectorPredictor(
-            config["input_size"],
+            input_size,
             config["num_hidden_layer"],
             config["hidden_size"],
-            config["output_size"]
+            output_size
         ).to(device)
 
         # Define loss & optimizer
         criterion = nn.MSELoss()
-        optimizer = optim.Adam(model.parameters(), lr=config["learning_rate"], weight_decay=1e-4)
+        optimizer = optim.Adam(model.parameters(), lr=config["learning_rate"], weight_decay=config["weight_decay"])
 
         # Training loop
         for epoch in range(config["num_epochs"]):
@@ -692,6 +713,7 @@ class ParameterImportanceSimilarity:
         # Load the sample row
 
         total_errors = 0
+        result = {}
         for workload_label in workloads:
             target_input = self.get_sample(target_data_path, workload_label)
             true_output = np.fromstring(target_input.iloc[0]['label'].strip('[]'), sep=' ')
@@ -723,9 +745,13 @@ class ParameterImportanceSimilarity:
             cosine_similarity = np.dot(true_output, target_output_np.T) / (
                 np.linalg.norm(true_output) * np.linalg.norm(target_output_np)
             )
-            print(f"Workload: {workload_label}, Cosine Similarity: {cosine_similarity}")
-            total_errors += 1 - cosine_similarity
-        print(f"Average Error: {total_errors / len(workloads)}")
+            error = 1 - cosine_similarity
+            print(f"Workload: {workload_label}, error: {error}")
+            result[workload_label] = error
+            total_errors += error
+        average_error = total_errors / len(workloads)
+        print(f"Average Error: {average_error}")
+        return average_error, result
         
 
 def evaluate_similarity(target_csv, workload_label, similar_datasets, system, data_dir, plot=False):
@@ -799,18 +825,18 @@ def evaluate_similarity(target_csv, workload_label, similar_datasets, system, da
         wl, hw, sim, vec = entry
         print(f"Workload: {wl}, Hardware: {hw}, Similarity: {sim}")
     
-    if plot:
-        plot_pi(target_output, actual_similarities[:2], system)
-        
     # Sort descending by similarity
     similarities.sort(key=lambda x: x[2], reverse=True)
     print("\n[Actual Similar Datasets]")
     for entry in similarities[:2]:
         wl, hw, sim, vec = entry
         print(f"Workload: {wl}, Hardware: {hw}, Similarity: {sim}")
+        
+    if plot:
+        plot_pi(target_output, similarities[:2] + actual_similarities[:2], system, workload_label)
     
     
-def plot_pi(target_output, similar_datasets, system):
+def plot_pi(target_output, similar_datasets, system, workload_label):
     """
     Plot grouped bar chart of target_output and similar datasets.
     """
@@ -831,7 +857,7 @@ def plot_pi(target_output, similar_datasets, system):
         
     ax.set_ylabel('Parameter Importance')
     plt.legend()
-    plt.show()
+    plt.savefig(workload_label + ".pdf")
     plt.close()
 
 
