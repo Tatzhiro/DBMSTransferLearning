@@ -17,12 +17,21 @@ from abc import ABC, abstractmethod
 import matplotlib.pyplot as plt
 
 from regression.system_configuration import MySQLConfiguration
+from regression.utils import read_data_csv
 
 
 class InstanceSimilarity(ABC):
     """
     Abstract base class that defines the interface for dataset similarity.
     """
+    
+    class DatasetMetadata:
+        def __init__(self, df, workload_label, hardware_label, distance):
+            self.df = df
+            self.workload_label = workload_label
+            self.hardware_label = hardware_label
+            self.distance = distance
+
     @abstractmethod
     def get_similar_datasets(self, target_data_path, workload_label=None, n=2) -> list:
         """
@@ -83,14 +92,12 @@ class OtterTuneSimilarity(InstanceSimilarity):
                 continue
             df = pd.read_csv(file_path)
             # Generate the hardware label from the first row
-            file_hardware = f"{df['num_cpu'].iloc[0]}-{df['mem_size'].iloc[0]}"
+            file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
 
             # Exclude matching hardware
             if file_hardware == hardware_label:
                 continue
 
-            # Preprocess param values
-            df = self.system.preprocess_param_values(df)
             # Exclude matching workload
             df = df[df["workload_label"] != workload_label]
             dfs.append(df)
@@ -129,21 +136,13 @@ class OtterTuneSimilarity(InstanceSimilarity):
         """
         # Read target data
         target_df = pd.read_csv(target_data_path)
-        hardware_label = f"{target_df['num_cpu'].iloc[0]}-{target_df['mem_size'].iloc[0]}"
+        hardware_label = f"{target_df['num_cpu'].iloc[0]}c{target_df['mem_size'].iloc[0]}g"
 
         # Compute distinct_metrics if not already cached
         if self.distinct_metrics is None:
             self.distinct_metrics = self.prune_metrics(workload_label, hardware_label)
 
-        # Preprocess target
-        target_df = self.system.preprocess_param_values(target_df)
         target_df = target_df[target_df['workload_label'] == workload_label]
-
-        # Keep only rows that match default param values
-        for param in self.system.get_param_names():
-            default_val = self.system.get_default_param_values().get(param)
-            if default_val is not None:
-                target_df = target_df[target_df[param] == default_val]
 
         # Focus only on the pruned metrics
         valid_metrics = [m for m in self.distinct_metrics if m in target_df.columns]
@@ -168,11 +167,10 @@ class OtterTuneSimilarity(InstanceSimilarity):
         candidate_dfs = []
         for df in dfs:
             # Skip same hardware
-            file_hardware = f"{df['num_cpu'].iloc[0]}-{df['mem_size'].iloc[0]}"
+            file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
             if file_hardware == hardware_label:
                 continue
 
-            df = self.system.preprocess_param_values(df)
             # Drop NaN columns
             df = df.drop(columns=df.columns[df.isnull().any()], errors="ignore")
            
@@ -225,11 +223,13 @@ class OtterTuneSimilarity(InstanceSimilarity):
             # get the single representative row
             data_for_dist = data_for_dist.iloc[[0]]
             dist = np.linalg.norm(binned_target.values - data_for_dist.values)
-
+            
+            param_df_path = f"dataset/transfer_learning/mysql/chimera_tech/{file_hw}-result.csv"
+            param_df = read_data_csv(param_df_path, self.system, wl)
             # We store (data, wl, hardware_label, distance)
-            distances.append((data, wl, file_hw, dist))
+            distances.append(self.DatasetMetadata(param_df, wl, file_hw, dist))
 
-        distances.sort(key=lambda x: x[3], reverse=False)
+        distances.sort(key=lambda x: x.distance)
 
         if metadata:
             return distances[:n]
@@ -339,7 +339,7 @@ class OtterTuneSimilarity(InstanceSimilarity):
         return best_k
 
 
-class ParameterImportanceSimilarity:
+class ParameterImportanceSimilarity(InstanceSimilarity):
     """
     Finds similar datasets by learning a neural net that maps database metrics 
     to important parameter vectors, then comparing these vectors (e.g., via Mahalanobis distance).
@@ -453,7 +453,7 @@ class ParameterImportanceSimilarity:
         data = data.drop(columns=data.columns[data.isnull().any()], errors="ignore")
 
         data['hardware_label'] = data.apply(
-            lambda row: f"{row['num_cpu']}-{row['mem_size']}", axis=1
+            lambda row: f"{row['num_cpu']}c{row['mem_size']}g", axis=1
         )
         # Filter out data matching hardware_label or workload_label
         data = data[data["hardware_label"] != hardware_label]
@@ -488,11 +488,11 @@ class ParameterImportanceSimilarity:
         if config is None:
             config = {
                 "batch_size": 256,
-                "hidden_size": 64,
-                "learning_rate": 0.0005,
+                "hidden_size": 256,
+                "learning_rate": 0.0001,
                 "num_epochs": 30,
-                "num_hidden_layer": 20,
-                "weight_decay": 1e-3
+                "num_hidden_layer": 50,
+                "weight_decay": 1e-4
             }
             
         input_size = features.shape[1]
@@ -570,17 +570,42 @@ class ParameterImportanceSimilarity:
 
     def get_sample(self, target_data_path, workload_label):
         target_df = pd.read_csv(target_data_path)
-        target_df = self.system.preprocess_param_values(target_df)
         target_df = target_df[target_df['workload_label'] == workload_label]
-
-        for param in self.system.get_param_names():
-            default_val = self.system.get_default_param_values().get(param)
-            if default_val is not None:
-                target_df = target_df[target_df[param] == default_val]
 
         if len(target_df) < 2:
             raise ValueError("Not enough rows after filtering on default param values.")
         return target_df.iloc[[1]]
+
+
+    def _prepare_target_data(self, target_data_path, workload_label):
+        """
+        Retrieves the target input, hardware label, and computes the target output vector
+        if not already provided.
+        """
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        target_input = self.get_sample(target_data_path, workload_label)
+        hardware_label = f"{target_input['num_cpu'].iloc[0]}c{target_input['mem_size'].iloc[0]}g"
+
+        # Ensure the model is trained
+        if self.model is None:
+            self.model = self.train_model(workload_label, hardware_label)
+
+        # Compute target output vector if not provided
+        self.model.eval()
+        with torch.no_grad():
+            input_features = [col for col in self.feature_columns if col in target_input.columns]
+            target_input_sub = target_input[input_features]
+            scaled_input = pd.DataFrame(
+                self.scaler.transform(target_input_sub),
+                columns=input_features,
+                index=target_input_sub.index
+            )
+            target_tensor = torch.tensor(scaled_input.values, dtype=torch.float32).to(device)
+            target_output = self.model(target_tensor)
+            target_output_np = target_output.cpu().numpy()
+            
+        return target_input, hardware_label, target_output_np
+
 
     def get_similar_datasets(
         self, 
@@ -593,49 +618,27 @@ class ParameterImportanceSimilarity:
         """
         Retrieves the n "most similar" datasets by comparing the model outputs 
         (parameter-importance vectors) via *Mahalanobis distance*.
-        We'll convert that distance to similarity = 1 / (1 + distance).
+        Similarity is computed as: 1 / (1 + distance).
         """
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        target_input = self.get_sample(target_data_path, workload_label)
-        hardware_label = f"{target_input['num_cpu'].iloc[0]}-{target_input['mem_size'].iloc[0]}"
-
-        # Train the model if not already loaded
-        if self.model is None:
-            self.model = self.train_model(workload_label, hardware_label)
-
-        # Generate or reuse the target output vector
         if target_output_np is None:
-            self.model.eval()
-            with torch.no_grad():
-                input_features = [
-                    col for col in self.feature_columns if col in target_input.columns
-                ]
-                target_input_sub = target_input[input_features]
+            _, hardware_label, target_output_np = self._prepare_target_data(
+                target_data_path, workload_label
+            )
 
-                scaled_input = pd.DataFrame(
-                    self.scaler.transform(target_input_sub),
-                    columns=input_features,
-                    index=target_input_sub.index
-                )
-                target_tensor = torch.tensor(scaled_input.values, dtype=torch.float32).to(device)
-                target_output = self.model(target_tensor)
-                target_output_np = target_output.cpu().numpy()  # shape: (1, output_size)
-
-        # Gather CSV files
+        # Gather CSV files from data directory
         csv_files = glob.glob(os.path.join(self.data_dir, "*.csv"))
         dfs = []
         for file_path in csv_files:
-            if "train.csv" in file_path or "88c190g" in file_path:
+            if "train.csv" in file_path or "88c190g" in file_path or file_path.endswith("1.csv"):
                 continue
             dfs.append(pd.read_csv(file_path))
 
         divergences = []
         for df in dfs:
-            file_hardware = f"{df['num_cpu'].iloc[0]}-{df['mem_size'].iloc[0]}"
+            file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
             if file_hardware == hardware_label:
                 continue
 
-            df = self.system.preprocess_param_values(df)
             df = df.drop(columns=df.columns[df.isnull().any()], errors="ignore")
             workloads = df['workload_label'].unique()
 
@@ -648,21 +651,34 @@ class ParameterImportanceSimilarity:
 
                 try:
                     output_np = np.fromstring(subset.iloc[0]['label'].strip('[]'), sep=' ')
-                except:
+                except Exception:
                     continue
 
-                # Information lost when we use surrogate data for the target output
+                # Compute divergence using KL divergence between vectors
                 kl_div = entropy(target_output_np.flatten(), output_np)
+                
+                param_df_path = f"dataset/transfer_learning/mysql/chimera_tech/{file_hardware}-result.csv"
+                param_df = read_data_csv(param_df_path, self.system, workload_label)
+                
+                divergences.append(self.DatasetMetadata(param_df, wl, file_hardware, kl_div))
+                
 
-                divergences.append((subset, wl, file_hardware, kl_div, output_np))
-
-        # Sort ascending by divergence
-        divergences.sort(key=lambda x: x[3], reverse=False)
+        # Sort datasets by increasing divergence
+        divergences.sort(key=lambda x: x.distance)
 
         if metadata:
             return divergences[:n]
         else:
-            return [s[0] for s in divergences[:n]]
+            return [s.df for s in divergences[:n]]
+    
+
+    def get_parameter_importance(self, target_data_path, workload_label):
+        """
+        Returns the parameter importance vector (model output) for the target dataset.
+        Output elements are in the order defined by self.system.get_param_names().
+        """
+        _, _, target_output_np = self._prepare_target_data(target_data_path, workload_label)
+        return target_output_np.flatten()
 
         
     def loocv(self, target_data_path, workloads):
@@ -677,7 +693,7 @@ class ParameterImportanceSimilarity:
         for workload_label in workloads:
             target_input = self.get_sample(target_data_path, workload_label)
             true_output = np.fromstring(target_input.iloc[0]['label'].strip('[]'), sep=' ')
-            hardware_label = f"{target_input['num_cpu'].iloc[0]}-{target_input['mem_size'].iloc[0]}"
+            hardware_label = f"{target_input['num_cpu'].iloc[0]}c{target_input['mem_size'].iloc[0]}g"
             # Train the model if not already loaded
             self.model = self.train_model(workload_label, hardware_label)
 
@@ -716,15 +732,8 @@ def evaluate_similarity(target_csv, workload_label, similar_datasets, system, da
     Outputs the actual similarity scores and the most similar datasets.
     """
     target_df = pd.read_csv(target_csv)
-    target_df = system.preprocess_param_values(target_df)
     target_df = target_df[target_df['workload_label'] == workload_label]
-    hardware_label = f"{target_df['num_cpu'].iloc[0]}-{target_df['mem_size'].iloc[0]}"
-
-    # Keep only rows that match the default param values
-    for param in system.get_param_names():
-        default_val = system.get_default_param_values().get(param)
-        if default_val is not None:
-            target_df = target_df[target_df[param] == default_val]
+    hardware_label = f"{target_df['num_cpu'].iloc[0]}c{target_df['mem_size'].iloc[0]}g"
 
     # Use the second row if the first row might be invalid, etc.
     if len(target_df) < 2:
@@ -744,14 +753,13 @@ def evaluate_similarity(target_csv, workload_label, similar_datasets, system, da
         
     divergences = []
     actual_divergences = []
-    similar_context = [(entry[1], entry[2]) for entry in similar_datasets]
+    similar_context = [(entry.workload_label, entry.hardware_label) for entry in similar_datasets]
     for df in dfs:
-        file_hardware = f"{df['num_cpu'].iloc[0]}-{df['mem_size'].iloc[0]}"
+        file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
         if file_hardware == hardware_label:
             # Skip same hardware
             continue
 
-        df = system.preprocess_param_values(df)
         df = df.drop(columns=df.columns[df.isnull().any()], errors="ignore")
 
         workloads = df['workload_label'].unique()
@@ -819,7 +827,7 @@ def main():
     """
     Example usage of the refactored similarity classes.
     """
-    data_dir = "dataset/transfer_learning/mysql/chimera_tech"
+    data_dir = "dataset/metric_learning/chimera_tech"
     target_csv = os.path.join(data_dir, "88c190g-result.csv")
     workloads = [
         "64-1000000-4-oltp_read_only-0.2",
@@ -854,8 +862,7 @@ def main():
         )
         print("\n[OtterTuneSimilarity] Found similar datasets:")
         for entry in similar_datasets:
-            df, wl, hw, sim = entry
-            print(f"Workload: {wl}, Hardware: {hw}, Euclidean Distance: {sim}")
+            print(f"Workload: {entry.workload_label}, Hardware: {entry.hardware_label}, Euclidean Distance: {entry.distance}")
             
         # Evaluate similarity scores
         evaluate_similarity(target_csv, workload_label, similar_datasets, MySQLConfiguration(), data_dir)
@@ -870,8 +877,7 @@ def main():
         )
         print("\n[ParameterImportanceSimilarity] Found similar datasets (metadata):")
         for entry in similar_datasets_param:
-            df, wl, hw, sim, vec = entry
-            print(f"Workload: {wl}, Hardware: {hw}, Similarity: {sim}")
+            print(f"Workload: {entry.workload_label}, Hardware: {entry.hardware_label}, Similarity: {entry.distance}")
             
         # Evaluate similarity scores
         evaluate_similarity(target_csv, workload_label, similar_datasets_param, MySQLConfiguration(), data_dir)

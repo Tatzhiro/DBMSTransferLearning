@@ -9,6 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from IPython import embed
 import numpy as np
 from copy import deepcopy
+import itertools
 
 class FeatureSelector(ABC):
     @abstractmethod
@@ -211,6 +212,11 @@ class L2SFeatureSelector(FeatureSelector):
     
 
 class ImportanceFeatureSelector(FeatureSelector):
+    def __init__(self, df: pd.DataFrame=None, system: SystemConfiguration=None) -> None:
+        self.df = df
+        self.system = system
+        
+    
     def select_important_features(self, df: pd.DataFrame, system: SystemConfiguration) -> None:
         self.df = df
         self.system = system
@@ -251,3 +257,34 @@ class ImportanceFeatureSelector(FeatureSelector):
         
         vector = vector / np.sum(vector)
         return vector
+    
+    def get_parameter_matrix(self):
+        param_names = self.system.get_param_names()
+        matrix = np.zeros((len(param_names), len(param_names)))
+        
+        # Preprocess the dataframe once
+        self.df = self.system.preprocess_param_values(self.df)
+        
+        for i, p in enumerate(param_names):
+            for j, q in enumerate(param_names):
+                if i > j:
+                    continue
+                df = drop_unimportant_parameters(self.df, [p, q], self.system)
+                range = self.get_range(df)
+                matrix[i][j] = range
+
+        # Normalize the vector so that the effects sum to 1
+        matrix = matrix / np.sum(matrix)
+        return matrix
+        
+    
+    def select_parameter_pair_to_sample(self):
+        if not hasattr(self, "matrix"):
+            self.matrix = self.get_parameter_matrix()
+        matrix = self.matrix
+        flat_matrix = matrix.flatten()
+        flat_matrix = flat_matrix / np.sum(flat_matrix)
+        idx = np.random.choice(len(flat_matrix), p=flat_matrix)
+        i = idx // len(matrix)
+        j = idx % len(matrix)
+        return self.system.get_param_names()[i], self.system.get_param_names()[j]

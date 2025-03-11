@@ -10,3 +10,4 @@ from sklearn.linear_model import LinearRegression, LassoCV, RidgeCV, Ridge
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import WhiteKernel, Exponentiation, RationalQuadratic, RBF, ConstantKernel, Matern, DotProduct, Sum, Product
 from .plot import PlotDesign, plot_linegraph_from_df, scatterplot_from_df, machine_datasize_axis_label, plot_bargraph
+from .transfer_learning.chimera_tech import ChimeraTech

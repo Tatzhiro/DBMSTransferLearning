@@ -30,10 +30,10 @@ class TransferLearning(ABC):
     
     self.target_df = read_data_csv(self.target_data_path, self.system, self.workload)
     if self.base_data_path is None:
-      datasets = instance_similarity.get_similar_datasets(self.target_data_path, workload, metadata=True)
-      df = datasets[0][0]
-      print(f"Using {datasets[0][1]}, {datasets[0][2]} as base data")
-      df = system.preprocess_param_values(df)
+      datasets: list[InstanceSimilarity.DatasetMetadata] = instance_similarity.get_similar_datasets(self.target_data_path, workload, metadata=True)
+      self.similar_datasets = datasets
+      print(f"Using {datasets[0].workload_label}, {datasets[0].hardware_label} as base data")
+      df = datasets[0].df
       self.base_df = df[system.get_param_names() + [system.get_perf_metric()]]
     else:
       self.base_df = read_data_csv(self.base_data_path, self.system, self.workload)
@@ -123,10 +123,9 @@ class Proposed(TransferLearning):
     self.feature_selector = ImportanceFeatureSelector()
     
     if ref_data_path is None:
-      datasets = instance_similarity.get_similar_datasets(target_data_path, workload, n=2, metadata=True)
-      df = datasets[1][0]
-      print(f"Using {datasets[1][1]}, {datasets[1][2]} as reference data")
-      df = system.preprocess_param_values(df)
+      datasets: list[InstanceSimilarity.DatasetMetadata] = instance_similarity.get_similar_datasets(target_data_path, workload, n=2, metadata=True)
+      df = datasets[1].df
+      print(f"Using {datasets[1].workload_label}, {datasets[1].hardware_label} as reference data")
       self.ref_df = df[system.get_param_names() + [system.get_perf_metric()]]
       important_parameters = self.feature_selector.select_important_features(self.ref_df, system)
       print(f"Important parameters: {important_parameters}")
