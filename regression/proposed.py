@@ -81,8 +81,8 @@ class TransferLearning(ABC):
   
 
 class Vanilla(TransferLearning):
-  def __init__(self, workload, system, base_data_path: str, target_data_path: str):
-    super().__init__(workload, system, base_data_path, target_data_path)
+  def __init__(self, workload, system, target_data_path: str, base_data_path: str=None, instance_similarity: InstanceSimilarity = None) -> None:
+    super().__init__(workload, system, instance_similarity, base_data_path, target_data_path)
     
   def initialize(self):
     np.random.seed(self.seed)
@@ -223,7 +223,8 @@ class Proposed(TransferLearning):
       train_data = pd.concat([base_train_data, self.finetune_data])
     else:
       train_data = self.finetune_data
-    self.model.fit(train_data[self.system.get_param_names()], train_data[self.system.get_perf_metric()])
+    important_params = self.parameters
+    self.model.fit(train_data[important_params], train_data[self.system.get_perf_metric()])
 
   def update_shift_coefficient(self) -> None:
     merge_param = self.machine_independent_parameters 
@@ -290,8 +291,9 @@ class Proposed(TransferLearning):
     self.finetune_data = pd.concat([self.finetune_data, sampled_row])
 
   def predict(self, df: DataFrame) -> float:
+    important_params = self.parameters
     df = self.system.preprocess_param_values(df)
-    return self.model.predict(df[self.system.get_param_names()])
+    return self.model.predict(df[important_params])
   
 
 class ToyChimera(Proposed):
@@ -464,7 +466,7 @@ class L2S(TransferLearning):
 
   def initialize(self):
     np.random.seed(self.seed)
-    self.target_data_population = self.calculate_mean_performance_groupedby_params(self.target_df, self.system.get_param_names())
+    self.target_data_population = self.calculate_mean_performance_groupedby_params(self.target_df, self.parameters)
     self.finetune_data = pd.DataFrame()
     self.eer = 0.1
     self.iter = 0
@@ -493,13 +495,15 @@ class L2S(TransferLearning):
     self.finetune_data = pd.concat([self.finetune_data, sampled_row])
 
   def fit(self) -> None:
-    X = self.finetune_data[self.system.get_param_names()]
+    important_params = self.parameters
+    X = self.finetune_data[important_params]
     y = self.finetune_data[self.system.get_perf_metric()]
     self.model.fit(X, y)
 
   def predict(self, df: DataFrame) -> float:
+    important_params = self.parameters
     df = self.system.preprocess_param_values(df)
-    return self.model.predict(df[self.system.get_param_names()])
+    return self.model.predict(df[important_params])
   
   def select_important_parameters(self) -> list[str]:
     imporant_parameters = self.feature_selector.select_important_features(self.base_df, self.system)
@@ -572,7 +576,13 @@ class DataReuse(TransferLearning):
     else:
       train_data = pd.concat([self.base_train_data, self.finetune_data])
       self.optimize()
-    self.model.fit(train_data[self.parameters], train_data[self.system.get_perf_metric()])
+      
+    try:
+      self.model.fit(train_data[self.parameters], train_data[self.system.get_perf_metric()])
+    except np.linalg.LinAlgError:
+      print("LinAlgError: Singular matrix")
+      self.model = None
+      return
 
   def optimize(self):
     correlation_df = pd.merge(self.base_train_data, self.finetune_data, on=self.parameters)
@@ -585,6 +595,8 @@ class DataReuse(TransferLearning):
       self.model = make_pipeline(StandardScaler(), model)
     
   def predict(self, df: DataFrame) -> float:
+    if self.model is None:
+      return np.nan
     df = self.system.preprocess_param_values(df)
     return self.model.predict(df[self.parameters])
   

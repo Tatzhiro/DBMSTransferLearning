@@ -22,7 +22,7 @@ def main(cfg: DictConfig) -> None:
     sys_argv = [x for x in sys.argv if "+" not in x]    
     args_dict = dict([sys.argv[(n*2)+1:(n*2)+3] for n in range(int(len(sys_argv) / 2))])
     assert "--config-name" in args_dict
-    config_name = os.path.basename(args_dict["--config-name"]).split(".")[0]
+    config_name = os.path.basename(args_dict["--config-name"]).removesuffix(".yaml")
     warnings.filterwarnings(action='ignore', category=ConvergenceWarning)
     warnings.filterwarnings(action='ignore', category=UserWarning)
     
@@ -30,8 +30,8 @@ def main(cfg: DictConfig) -> None:
     hydra_runtime_output_dir = hydra_cfg["runtime"]["output_dir"]
     output_name = os.path.join(hydra_runtime_output_dir, config_name)
     
-    f = open(f"{output_name}.log", 'w')
-    sys.stdout = f
+    # f = open(f"{output_name}.log", 'w')
+    # sys.stdout = f
 
     models = cfg.models
     sizes = cfg.sizes

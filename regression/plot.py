@@ -4,6 +4,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 from IPython import embed
 import numpy as np
+import pandas as pd
 
 class PlotDesign:
     def __init__(self, x_label: str, y_label: str, figsize: (int, int) = (6.4, 4.8),
@@ -54,7 +55,13 @@ def plot_linegraph_from_df(df: DataFrame, design: PlotDesign, output_name: str):
     plt.close()
     
     
-def plot_bargraph(df: DataFrame, design: PlotDesign, output_name: str, thresholds: list = [70, 60, 50, 40, 30, 20, 10, 5]):
+def plot_bargraph(
+    df: DataFrame, 
+    design: PlotDesign, 
+    output_name: str, 
+    thresholds: list = [30, 20, 10, 5],
+    group_width = 0.8,
+    group_gap = 0.4):
     if ".pdf" not in output_name:
         output_name = output_name + ".pdf"
         
@@ -74,16 +81,60 @@ def plot_bargraph(df: DataFrame, design: PlotDesign, output_name: str, threshold
     bar_df = DataFrame(table).T
     bar_df.columns = df.columns
 
-    plots = bar_df.plot(kind="bar", figsize=design.figsize, rot=0, fontsize=design.fontsize, legend=False, color=design.line_colors, width=0.8)
+    fig, ax = plt.subplots(figsize=design.figsize)
 
-    plt.grid(True)  # Add grid lines for better readability
-    plt.ylabel(f"{design.y_label}", fontsize=design.fontsize)
-    plt.xlabel(f"{design.x_label}", fontsize=design.fontsize)
+    n_groups = len(bar_df.index)
+    n_cols = len(bar_df.columns)
+    bar_width = group_width / n_cols  # width for each individual bar
+
+    # Plot the main bars manually.
+    for i, threshold in enumerate(bar_df.index):
+        group_start = i * (group_width + group_gap)
+        for j, col in enumerate(bar_df.columns):
+            value = bar_df.loc[threshold, col]
+            x = group_start + j * bar_width
+            if pd.notna(value):
+                ax.bar(x, value, width=bar_width, color=design.line_colors[j], zorder=3)
+            # (If NaN, we delay plotting the translucent bar until later.)
+
+    # Force a redraw to get the current y-axis max.
+    plt.draw()
+    y_max = ax.get_ylim()[1]
+
+    # Overlay translucent gray bars where the threshold was not met.
+    exceeded_legend_added = False
+    for i, threshold in enumerate(bar_df.index):
+        group_start = i * (group_width + group_gap)
+        for j, col in enumerate(bar_df.columns):
+            value = bar_df.loc[threshold, col]
+            x = group_start + j * bar_width
+            if pd.isna(value):
+                if not exceeded_legend_added:
+                    ax.bar(x, y_max, width=bar_width, color="gray", alpha=0.3, 
+                           zorder=0, label="Exceeded Threshold")
+                    exceeded_legend_added = True
+                else:
+                    ax.bar(x, y_max, width=bar_width, color="gray", alpha=0.3, zorder=0)
+
+    # Set grid and labels.
+    ax.grid(True)
+    ax.set_ylabel(design.y_label, fontsize=design.fontsize)
+    ax.set_xlabel(design.x_label, fontsize=design.fontsize)
+
+    # Set x-tick positions at the center of each group.
+    x_ticks = [i * (group_width + group_gap) + group_width/2 for i in range(n_groups)]
+    ax.set_xticks(x_ticks)
+    ax.set_xticklabels(list(bar_df.index), fontsize=design.fontsize)
+
+    # Add legend.
+    if design.legend_anchor is not None:
+        ax.legend(bbox_to_anchor=design.legend_anchor, ncol=3, fontsize=design.fontsize - 4)
+    else:
+        ax.legend(fontsize=design.fontsize - 4)
+
     plt.tight_layout()
     output_name = output_name.replace(".pdf", "_barplot.pdf")
-    if design.legend_anchor != None:
-        plt.legend(bbox_to_anchor=design.legend_anchor, ncol=3, fontsize=design.fontsize-4)
-    plt.savefig(f"{output_name}", bbox_inches='tight')
+    plt.savefig(output_name, bbox_inches="tight")
     plt.close()
     
 

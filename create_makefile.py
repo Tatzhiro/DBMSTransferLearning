@@ -4,7 +4,7 @@ def make_rules(directory, plot_type, script):
     for filename in os.listdir(directory):
         if ".yaml" not in filename:
             continue
-        conf_name = filename.split(".")[0]
+        conf_name = filename.removesuffix(".yaml")
         # * make df
         target = os.path.join("outputs", plot_type, conf_name, f"{conf_name}.csv")
         sources=" ".join([os.path.join(directory, conf_name + ".yaml"), f"scripts/{script}"])
@@ -34,11 +34,11 @@ for dir in os.listdir("scripts/conf"):
     csv_script = scripts[dir]
     for filename in os.listdir(directory):
         if ".yaml" not in filename: continue
-        conf_name = filename.split(".")[0]
+        conf_name = filename.removesuffix(".yaml")
         # * make df
         csv_target = os.path.join("outputs", dir, conf_name, f"{conf_name}.csv")
         csv_sources=" ".join([os.path.join(directory, conf_name + ".yaml"), csv_script])
-        csv_rule = f"{csv_target}: {csv_sources}\n\tpython {csv_script} --config-name {conf_name}.yaml"
+        csv_rule = f"{csv_target}: {csv_sources}\n\tpython -u {csv_script} --config-name {conf_name}.yaml"
         targets[dir].append(csv_target)
         all_targets.append(csv_target)
         rules.append(csv_rule)

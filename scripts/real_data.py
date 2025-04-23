@@ -49,7 +49,7 @@ def main(cfg: DictConfig) -> None:
                 
             
 
-    config_output_dir = f"{hydra_runtime_output_dir}/../../real_data/{config_name}"
+    config_output_dir = f"{hydra_runtime_output_dir}/../../real_data/{cfg.workload}"
     shutil.copytree(hydra_runtime_output_dir, config_output_dir, dirs_exist_ok=True)
 
 def custom_sort_key(index_str):

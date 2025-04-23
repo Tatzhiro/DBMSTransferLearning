@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import random
+import json
 
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
@@ -135,12 +136,22 @@ class OtterTuneSimilarity(InstanceSimilarity):
         (decile-binned) and Euclidean distance in that space.
         """
         # Read target data
-        target_df = pd.read_csv(target_data_path)
+        file = os.path.basename(target_data_path)
+        metric_path = os.path.join(self.data_dir, file)
+        target_df = pd.read_csv(metric_path)
         hardware_label = f"{target_df['num_cpu'].iloc[0]}c{target_df['mem_size'].iloc[0]}g"
 
-        # Compute distinct_metrics if not already cached
-        if self.distinct_metrics is None:
+
+        metrics_path = f"neural_network/metrics/{workload_label}_{hardware_label}.txt"
+        if os.path.exists(metrics_path):
+            with open(metrics_path, 'r') as f:
+                metrics = f.read().splitlines()
+            self.distinct_metrics = metrics
+        else:
             self.distinct_metrics = self.prune_metrics(workload_label, hardware_label)
+            with open(metrics_path, 'w') as f:
+                for metric in self.distinct_metrics:
+                    f.write(f"{metric}\n")
 
         target_df = target_df[target_df['workload_label'] == workload_label]
 
@@ -487,30 +498,27 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
         config = self.config
         if config is None:
             config = {
-                "batch_size": 256,
-                "hidden_size": 256,
-                "learning_rate": 0.0001,
-                "num_epochs": 30,
+                "batch_size": 64,
+                "hidden_size": 64,
+                "learning_rate": 0.001,
+                "num_epochs": 100,
                 "num_hidden_layer": 50,
-                "weight_decay": 1e-4
+                "weight_decay": 0.001
             }
+            
+            
+        os.makedirs(f"neural_network/weights/{json.dumps(config)}", exist_ok=True)
+        model_path = f"neural_network/weights/{json.dumps(config)}/{workload_label}_{hardware_label}.pt"
+        if os.path.exists(model_path):
+            print(f"Model already exists at {model_path}. Loading...")
+            self.model = torch.load(model_path, weights_only=False)
+            return self.model
+        
             
         input_size = features.shape[1]
         # Build a 2D array of labels
         label_mat = np.vstack(train_data['label'].values)
         output_size = label_mat.shape[1] if len(label_mat) > 0 else 1
-
-        # NEW: Compute covariance matrix of label vectors and invert it
-        # We add a small regularization on the diagonal to avoid singular inversions.
-        if len(label_mat) > 1:
-            cov = np.cov(label_mat, rowvar=False)  # shape (d, d)
-            # Add EPS to the diagonal for stability
-            cov += EPS * np.eye(cov.shape[0], dtype=cov.dtype)
-
-            cov_inv = np.linalg.inv(cov)
-            self.label_cov_inv = cov_inv
-        else:
-            self.label_cov_inv = None  # not enough data to form a covariance matrix
 
         # Create PyTorch Dataset
         input_data = train_data.drop(columns=['label']).values
@@ -546,6 +554,9 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
 
             epoch_loss = running_loss / len(train_loader.dataset)
             print(f"Epoch [{epoch+1}/{config['num_epochs']}], Loss: {epoch_loss:.4f}")
+            
+        # Save the model
+        torch.save(model, model_path)
 
         return model
 
@@ -583,7 +594,9 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
         if not already provided.
         """
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        target_input = self.get_sample(target_data_path, workload_label)
+        file = os.path.basename(target_data_path)
+        metric_path = os.path.join(self.data_dir, file)
+        target_input = self.get_sample(metric_path, workload_label)
         hardware_label = f"{target_input['num_cpu'].iloc[0]}c{target_input['mem_size'].iloc[0]}g"
 
         # Ensure the model is trained
@@ -832,13 +845,27 @@ def main():
     workloads = [
         "64-1000000-4-oltp_read_only-0.2",
         "64-1000000-4-oltp_read_only-0.6",
+        "64-1000000-4-oltp_read_only-1.0",
         "64-1000000-4-oltp_write_only-0.2",
         "64-1000000-4-oltp_write_only-0.6",
+        "64-1000000-4-oltp_write_only-1.0",
+        "64-1000000-4-oltp_read_write_95-0.2",
+        "64-1000000-4-oltp_read_write_95-0.6",
+        "64-1000000-4-oltp_read_write_95-1.0",
+        "64-1000000-4-oltp_read_write_80-0.2",
+        "64-1000000-4-oltp_read_write_80-0.6",
+        "64-1000000-4-oltp_read_write_80-1.0",
         "64-1000000-4-oltp_read_write_50-0.2",
         "64-1000000-4-oltp_read_write_50-0.6",
+        "64-1000000-4-oltp_read_write_50-1.0",
+        "64-1000000-4-oltp_read_write_20-0.2",
+        "64-1000000-4-oltp_read_write_20-0.6",
+        "64-1000000-4-oltp_read_write_20-1.0",
+        "64-1000000-4-oltp_read_write_5-0.2",
+        "64-1000000-4-oltp_read_write_5-0.6",
+        "64-1000000-4-oltp_read_write_5-1.0",
         "10-4-4-tpcc-nan",
         "100-4-4-tpcc-nan",
-        
     ]
     
     param_similarity = ParameterImportanceSimilarity(
@@ -857,7 +884,7 @@ def main():
         similar_datasets = ottertune_similarity.get_similar_datasets(
             target_data_path=target_csv,
             workload_label=workload_label,
-            n=2,
+            n=1,
             metadata=True
         )
         print("\n[OtterTuneSimilarity] Found similar datasets:")
@@ -872,7 +899,7 @@ def main():
         similar_datasets_param = param_similarity.get_similar_datasets(
             target_data_path=target_csv,
             workload_label=workload_label,
-            n=2,
+            n=1,
             metadata=True
         )
         print("\n[ParameterImportanceSimilarity] Found similar datasets (metadata):")

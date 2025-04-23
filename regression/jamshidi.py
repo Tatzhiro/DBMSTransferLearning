@@ -3,9 +3,9 @@ import statsmodels.api as sm
 from .system_configuration import SystemConfiguration
 from .utils import set_unimportant_columns_to_one_value, drop_unimportant_parameters
 from abc import ABC, abstractmethod
-from sklearn.linear_model import LassoCV, ElasticNetCV
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LassoCV, ElasticNetCV, LinearRegression
+from sklearn.pipeline import make_pipeline, Pipeline
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from IPython import embed
 import numpy as np
 from copy import deepcopy
@@ -114,7 +114,42 @@ class L2SFeatureSelector(FeatureSelector):
     
         # concatenate parameters that are chosen by stepwise regression
         self.important_params = [self.parameters[i] for i in important_clm_idxs]
+        
+        X, y = self.__filter_data(df, important_clm_idxs, system)
+        matrix = np.zeros((len(self.parameters), len(self.parameters)))
+        model = Pipeline([("poly", PolynomialFeatures(degree=2, interaction_only=True, include_bias=True)),
+                                ("linear", LinearRegression(fit_intercept=True))])
+        self.pmodel = model.fit(X, y)
+        self.coefficients = pd.Series(model["linear"].coef_, index=model["poly"].get_feature_names_out())
+
+        for name, coef in self.coefficients.items():
+            # Ignore bias (intercept)
+            if name == "1":
+                continue
+
+            terms = name.split(" ")
+            
+            if len(terms) == 1:
+                term = terms[0]
+                index = int(term.removeprefix("x"))
+                param = self.important_params[index]
+                # Linear term: put on diagonal
+                i = self.parameters.index(param)
+                matrix[i, i] = abs(coef)
+            elif len(terms) == 2:
+                index_i = int(terms[0].removeprefix("x"))
+                index_j = int(terms[1].removeprefix("x"))
+                # Interaction term: fill symmetric matrix
+                param_i = self.important_params[index_i]
+                param_j = self.important_params[index_j]
+                i = self.parameters.index(param_i)
+                j = self.parameters.index(param_j)
+                matrix[i, j] = abs(coef)
+                
+        self.matrix = matrix
+
         return self.important_params
+
 
     def __stepwise_feature_selection(self, df: pd.DataFrame, system: SystemConfiguration,
                                 initial_list=[],
@@ -180,12 +215,29 @@ class L2SFeatureSelector(FeatureSelector):
 
         return X, y
     
-    def select_parameter_to_sample(self):
+    def select_parameter_to_sample(self, interaction: bool = True):
+        if interaction:
+            return self.select_parameter_to_sample_2d()
+        else:
+            return self.select_parameter_to_sample_1d()
+    
+    def select_parameter_to_sample_1d(self):
         param = self.coefficients.drop("const")
         param_magnitude = np.abs(param)
         param_frq = param_magnitude / np.sum(param_magnitude)
         distribution = param_frq.to_list()
         return np.random.choice(self.important_params, p=distribution)
+    
+    def select_parameter_to_sample_2d(self):
+        param_list = self.parameters
+        param = self.matrix
+        param_magnitude = np.abs(param)
+        param_frq = param_magnitude / np.sum(param_magnitude)
+        distribution = param_frq.flatten()
+        idx = np.random.choice(len(distribution), p=distribution)
+        i = idx // len(param_list)
+        j = idx % len(param_list)
+        return param_list[i], param_list[j]
     
     def get_parameter_importance(self):
         param = self.coefficients
@@ -239,7 +291,7 @@ class ImportanceFeatureSelector(FeatureSelector):
         return np.random.choice(self.system.get_param_names(), p=importance_vector)
 
         
-    def get_range(self, df: pd.DataFrame):
+    def get_significant_range(self, df: pd.DataFrame):
         min = df[self.system.get_perf_metric()].min()
         max = df[self.system.get_perf_metric()].max()
         return max - min
@@ -252,7 +304,7 @@ class ImportanceFeatureSelector(FeatureSelector):
         
         for i, p in enumerate(self.system.get_param_names()):
             df = drop_unimportant_parameters(self.df, [p], self.system)
-            range = self.get_range(df)
+            range = self.get_significant_range(df)
             vector[i] = range
         
         vector = vector / np.sum(vector)
@@ -270,7 +322,7 @@ class ImportanceFeatureSelector(FeatureSelector):
                 if i > j:
                     continue
                 df = drop_unimportant_parameters(self.df, [p, q], self.system)
-                range = self.get_range(df)
+                range = self.get_significant_range(df)
                 matrix[i][j] = range
 
         # Normalize the vector so that the effects sum to 1
@@ -288,3 +340,71 @@ class ImportanceFeatureSelector(FeatureSelector):
         i = idx // len(matrix)
         j = idx % len(matrix)
         return self.system.get_param_names()[i], self.system.get_param_names()[j]
+    
+    
+class MultiImportanceFeatureSelector(ImportanceFeatureSelector):
+    def __init__(self, df: pd.DataFrame=None, system: SystemConfiguration=None) -> None:
+        self.df = df
+        self.system = system
+        
+    def get_parameter_matrix(self):
+        param_names = self.system.get_param_names()
+        matrix = np.zeros((len(param_names), len(param_names)))
+        
+        # Preprocess the dataframe once
+        self.df = self.system.preprocess_param_values(self.df)
+        
+        for i, p in enumerate(param_names):
+            for j, q in enumerate(param_names):
+                if i > j:
+                    continue
+                df = drop_unimportant_parameters(self.df, [p, q], self.system)
+                range = self.get_significant_range(df)
+                if p != q and (not self.q_is_important(df, p, q) or not self.q_is_important(df, q, p)):
+                    range = 0
+                matrix[i][j] = range
+
+        # Normalize the vector so that the effects sum to 1
+        matrix = matrix / np.sum(matrix)
+        return matrix
+
+
+    def get_significant_range(self, df: pd.DataFrame, threshold_factor: float = 1.05):
+        min = df[self.system.get_perf_metric()].quantile(0.01)
+        max = df[self.system.get_perf_metric()].quantile(0.99)
+        if max / min < threshold_factor:
+            return 0
+        return max - min
+    
+    
+    def q_is_important(self, df, p, q):
+        # Check if q is important given p
+        # get unique values of p
+        unique_p = df[p].unique()
+        # for each unique value of p, get the range of q
+        for val in unique_p:
+            df_p = df[df[p] == val]
+            # 99th percentile of q
+            min = df_p[self.system.get_perf_metric()].quantile(0.01)
+            max = df_p[self.system.get_perf_metric()].quantile(0.99)
+            if max > 2 * min:
+                return True
+        return False
+        
+    
+    def select_important_features(self) -> None:
+        if not hasattr(self, "matrix"):
+            self.matrix = self.get_parameter_matrix()
+        
+        important_params = []
+        for i, p in enumerate(self.system.get_param_names()):
+            # if all the elements in ith row are 0, then skip
+            if np.sum(self.matrix[i]) == 0:
+                continue
+            if np.sum(self.matrix[:, i]) == 0:
+                continue
+            
+            important_params.append(p)
+        return important_params
+    
+    
