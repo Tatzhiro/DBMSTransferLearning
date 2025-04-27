@@ -84,35 +84,41 @@ class OtterTuneSimilarity(InstanceSimilarity):
         a subset of metric names that are representative of each cluster centroid.
         """
         # Gather all CSV files in data_dir
-        csv_files = glob.glob(os.path.join(self.data_dir, "*.csv"))
+        # csv_files = glob.glob(os.path.join(self.data_dir, "*.csv"))
 
-        dfs = []
-        for file_path in csv_files:
-            if "train.csv" in file_path or "88c190g" in file_path:
-                # Skip specific files if needed
-                continue
-            df = pd.read_csv(file_path)
-            # Generate the hardware label from the first row
-            file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
+        # dfs = []
+        # for file_path in csv_files:
+        #     if "train.csv" in file_path or "88c190g" in file_path:
+        #         # Skip specific files if needed
+        #         continue
+        #     df = pd.read_csv(file_path)
+        #     # Generate the hardware label from the first row
+        #     file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
 
-            # Exclude matching hardware
-            if file_hardware == hardware_label:
-                continue
+        #     # Exclude matching hardware
+        #     if file_hardware == hardware_label:
+        #         continue
 
-            # Exclude matching workload
-            df = df[df["workload_label"] != workload_label]
-            dfs.append(df)
+        #     # Exclude matching workload
+        #     df = df[df["workload_label"] != workload_label]
+        #     dfs.append(df)
 
-        if not dfs:
-            # Fallback if no data is found
-            return []
+        # if not dfs:
+        #     # Fallback if no data is found
+        #     return []
 
-        concat_df = pd.concat(dfs, ignore_index=True)
+        # concat_df = pd.concat(dfs, ignore_index=True)
+        concat_df = pd.read_csv("dataset/metric_learning/train.csv")
+        # concat_df = concat_df[concat_df['workload_label'] != workload_label]
+        # concat_df["hardware_label"] = concat_df.apply(
+        #     lambda row: f"{row['num_cpu']}c{row['mem_size']}g", axis=1
+        # )
+        # concat_df = concat_df[concat_df['hardware_label'] != hardware_label]
 
         # Drop columns with NaNs
         X = concat_df.drop(columns=concat_df.columns[concat_df.isnull().any()])
         # Drop non-metric columns
-        drop_cols = ["workload_label", "id", "label"] + self.system.get_param_names()
+        drop_cols = ["workload_label", "hardware_label", "id", "label"] + self.system.get_param_names()
         X = X.drop(columns=[c for c in drop_cols if c in X.columns], errors='ignore')
 
         # Factor Analysis
@@ -149,6 +155,7 @@ class OtterTuneSimilarity(InstanceSimilarity):
             self.distinct_metrics = metrics
         else:
             self.distinct_metrics = self.prune_metrics(workload_label, hardware_label)
+            os.makedirs(os.path.dirname(metrics_path), exist_ok=True)
             with open(metrics_path, 'w') as f:
                 for metric in self.distinct_metrics:
                     f.write(f"{metric}\n")
@@ -511,7 +518,20 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
         model_path = f"neural_network/weights/{json.dumps(config)}/{workload_label}_{hardware_label}.pt"
         if os.path.exists(model_path):
             print(f"Model already exists at {model_path}. Loading...")
-            self.model = torch.load(model_path, weights_only=False)
+            checkpoint = torch.load(model_path)
+            config = checkpoint['config']
+            input_size = checkpoint['input_size']
+            output_size = checkpoint['output_size']
+
+            model = self.VectorPredictor(
+                input_size,
+                config["num_hidden_layer"],
+                config["hidden_size"],
+                output_size
+            ).to(device)
+            model.load_state_dict(checkpoint['model_state_dict'])
+
+            self.model = model
             return self.model
         
             
@@ -556,7 +576,13 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
             print(f"Epoch [{epoch+1}/{config['num_epochs']}], Loss: {epoch_loss:.4f}")
             
         # Save the model
-        torch.save(model, model_path)
+        torch.save({
+            'model_state_dict': model.state_dict(),
+            'input_size': input_size,
+            'output_size': output_size,
+            'config': config
+        }, model_path)
+
 
         return model
 
@@ -702,7 +728,7 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
         # Load the sample row
 
         total_errors = 0
-        result = {}
+        results = {"kl_div": [], "random_kl_div": []}
         for workload_label in workloads:
             target_input = self.get_sample(target_data_path, workload_label)
             true_output = np.fromstring(target_input.iloc[0]['label'].strip('[]'), sep=' ')
@@ -728,16 +754,31 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
 
                 # Convert to tensor and run the model
                 target_tensor = torch.tensor(scaled_input.values, dtype=torch.float32).to(device)
-                target_output = self.model(target_tensor)
-                target_output_np = target_output.cpu().numpy()
+                predicted_output = self.model(target_tensor)
+                predicted_output_np = predicted_output.cpu().numpy()
             
-            kl_div = entropy(true_output, target_output_np.flatten())
-            print(f"Workload: {workload_label}, kl_div: {kl_div}")
-            result[workload_label] = kl_div
+            kl_div = entropy(true_output, predicted_output_np.flatten())
+            # Compute KL divergence against uniform distribution
+            random_kl_div = entropy(true_output, np.ones_like(true_output) / len(true_output))
+            print(f"Workload: {workload_label}, kl_div: {kl_div}, random_kl_div: {random_kl_div}")
+            results["kl_div"].append(kl_div)
+            results["random_kl_div"].append(random_kl_div)
             total_errors += kl_div
+            plot_pi(
+                true_output, 
+                [
+                    (workload_label, hardware_label, kl_div, predicted_output_np.flatten()),
+                    (workload_label, hardware_label, random_kl_div, np.ones_like(true_output) / len(true_output))
+                ], 
+                self.system, workload_label
+            )
         average_div = total_errors / len(workloads)
         print(f"Average kl_div: {average_div}")
-        return average_div, result
+        # dict of workload_label -> kl_div, random_kl_div
+        df = pd.DataFrame(results, index=workloads)
+        print(df)
+        df.to_csv("loocv.csv", index=True)
+        return average_div, results
         
 
 def evaluate_similarity(target_csv, workload_label, similar_datasets, system, data_dir, plot=False):
@@ -785,15 +826,15 @@ def evaluate_similarity(target_csv, workload_label, similar_datasets, system, da
 
             # Convert the first row's label to a vector
             try:
-                output_np = np.fromstring(subset.iloc[0]['label'].strip('[]'), sep=' ')
+                past_output = np.fromstring(subset.iloc[0]['label'].strip('[]'), sep=' ')
             except:
                 continue
 
-            kl_div = entropy(target_output, output_np)
-            divergences.append((wl, file_hardware, kl_div, output_np))
+            kl_div = entropy(target_output, past_output)
+            divergences.append((wl, file_hardware, kl_div, past_output))
             
             if (wl, file_hardware) in similar_context:
-                actual_divergences.append((wl, file_hardware, kl_div, output_np))
+                actual_divergences.append((wl, file_hardware, kl_div, past_output))
 
     print("\n[Actual Similarities]")
     for entry in actual_divergences:
@@ -809,6 +850,8 @@ def evaluate_similarity(target_csv, workload_label, similar_datasets, system, da
         
     if plot:
         plot_pi(target_output, divergences[:2] + actual_divergences[:2], system, workload_label)
+        
+    return actual_divergences
     
     
 def plot_pi(target_output, similar_datasets, system, workload_label):
@@ -877,8 +920,9 @@ def main():
     ottertune_similarity = OtterTuneSimilarity(system=MySQLConfiguration(), data_dir=data_dir)
     
     
+    data = {"ChimeraTech (Proposed)": [], "OtterTune": []}
     for workload_label in workloads:
-        print(f"Target CSV: {target_csv}, Workload: {workload_label}")
+        print(f"\nTarget CSV: {target_csv}, Workload: {workload_label}")
 
         ottertune_similarity.distinct_metrics = None
         similar_datasets = ottertune_similarity.get_similar_datasets(
@@ -892,7 +936,8 @@ def main():
             print(f"Workload: {entry.workload_label}, Hardware: {entry.hardware_label}, Euclidean Distance: {entry.distance}")
             
         # Evaluate similarity scores
-        evaluate_similarity(target_csv, workload_label, similar_datasets, MySQLConfiguration(), data_dir)
+        ottertune_result = evaluate_similarity(target_csv, workload_label, similar_datasets, MySQLConfiguration(), data_dir)
+        data["OtterTune"].append(ottertune_result[0][2])
 
         # Example usage of ParameterImportanceSimilarity
         param_similarity.model = None
@@ -907,7 +952,31 @@ def main():
             print(f"Workload: {entry.workload_label}, Hardware: {entry.hardware_label}, Similarity: {entry.distance}")
             
         # Evaluate similarity scores
-        evaluate_similarity(target_csv, workload_label, similar_datasets_param, MySQLConfiguration(), data_dir)
+        param_sim_result = evaluate_similarity(target_csv, workload_label, similar_datasets_param, MySQLConfiguration(), data_dir)
+        data["ChimeraTech (Proposed)"].append(param_sim_result[0][2])
+        
+    
+    # Plot the results
+    print("\n[Similarity Scores]")
+    for workload_label in workloads:
+        print(f"Workload: {workload_label}, ChimeraTech: {data['ChimeraTech (Proposed)']}, OtterTune: {data['OtterTune']}")
+    fig, ax = plt.subplots(figsize=(20, 12))
+    x = np.arange(len(workloads))
+    width = 0.35
+    ax.bar(x - width/2, data["ChimeraTech (Proposed)"], width, label='ChimeraTech (Proposed)')
+    ax.bar(x + width/2, data["OtterTune"], width, label='OtterTune')
+    ax.set_ylabel('Similarity Score')
+    ax.set_title('Similarity Scores for Different Workloads')
+    ax.set_xticks(x)
+    short_labels = [w.replace("64-1000000-4-", "") for w in workloads]
+    ax.set_xticklabels(short_labels, rotation=45)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig("similarity_scores.pdf")
+    plt.close()
+    
+    df = pd.DataFrame(data, index=workloads)
+    df.to_csv("similarity_scores.csv")
     
 
 
