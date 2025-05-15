@@ -34,7 +34,7 @@ class InstanceSimilarity(ABC):
             self.distance = distance
 
     @abstractmethod
-    def get_similar_datasets(self, target_data_path, workload_label=None, n=2) -> list:
+    def get_similar_datasets(self, target_data_path, workload_label=None, n=2, metadata=False) -> list:
         """
         Returns n most similar datasets to the target.
         """
