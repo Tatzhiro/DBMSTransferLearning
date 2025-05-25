@@ -12,6 +12,9 @@ from copy import deepcopy
 import itertools
 
 class FeatureSelector(ABC):
+    def __init__(self, system=None):
+        self.system = system
+        
     @abstractmethod
     def select_important_features(self, df: pd.DataFrame, system: SystemConfiguration) -> list:
         pass
@@ -353,18 +356,23 @@ class MultiImportanceFeatureSelector(ImportanceFeatureSelector):
         
         # Preprocess the dataframe once
         self.df = self.system.preprocess_param_values(self.df)
+        full_matrix = np.zeros((len(param_names), len(param_names)))
         
         for i, p in enumerate(param_names):
             for j, q in enumerate(param_names):
                 if i > j:
                     continue
                 df = drop_unimportant_parameters(self.df, [p, q], self.system)
+                min = df[self.system.get_perf_metric()].quantile(0.01)
+                max = df[self.system.get_perf_metric()].quantile(0.99)
+                full_matrix[i][j] = max - min
                 range = self.get_significant_range(df)
                 if p != q and (not self.q_is_important(df, p, q) or not self.q_is_important(df, q, p)):
                     range = 0
                 matrix[i][j] = range
 
         # Normalize the vector so that the effects sum to 1
+        print("full matrix", full_matrix)
         matrix = matrix / np.sum(matrix)
         return matrix
 

@@ -84,36 +84,37 @@ class OtterTuneSimilarity(InstanceSimilarity):
         a subset of metric names that are representative of each cluster centroid.
         """
         # Gather all CSV files in data_dir
-        # csv_files = glob.glob(os.path.join(self.data_dir, "*.csv"))
+        csv_files = glob.glob(os.path.join(self.data_dir, "*.csv"))
 
-        # dfs = []
-        # for file_path in csv_files:
-        #     if "train.csv" in file_path or "88c190g" in file_path:
-        #         # Skip specific files if needed
-        #         continue
-        #     df = pd.read_csv(file_path)
-        #     # Generate the hardware label from the first row
-        #     file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
+        dfs = []
+        for file_path in csv_files:
+            if "train.csv" in file_path or "88c190g" in file_path:
+                # Skip specific files if needed
+                continue
+            df = pd.read_csv(file_path)
+            # Generate the hardware label from the first row
+            file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
 
-        #     # Exclude matching hardware
-        #     if file_hardware == hardware_label:
-        #         continue
+            # Exclude matching hardware
+            if file_hardware == hardware_label:
+                continue
 
-        #     # Exclude matching workload
-        #     df = df[df["workload_label"] != workload_label]
-        #     dfs.append(df)
+            # Exclude matching workload
+            df = df[df["workload_label"] != workload_label]
+            dfs.append(df)
 
-        # if not dfs:
-        #     # Fallback if no data is found
-        #     return []
+        if not dfs:
+            # Fallback if no data is found
+            return []
 
-        # concat_df = pd.concat(dfs, ignore_index=True)
-        concat_df = pd.read_csv("dataset/metric_learning/train.csv")
-        # concat_df = concat_df[concat_df['workload_label'] != workload_label]
-        # concat_df["hardware_label"] = concat_df.apply(
-        #     lambda row: f"{row['num_cpu']}c{row['mem_size']}g", axis=1
-        # )
-        # concat_df = concat_df[concat_df['hardware_label'] != hardware_label]
+        concat_df = pd.concat(dfs, ignore_index=True)
+        concat_df = concat_df[concat_df['workload_label'] != workload_label]
+        concat_df["hardware_label"] = concat_df.apply(
+            lambda row: f"{row['num_cpu']}c{row['mem_size']}g", axis=1
+        )
+        concat_df = concat_df[concat_df['hardware_label'] != hardware_label]
+        
+        # concat_df = pd.read_csv("dataset/metric_learning/train.csv")
 
         # Drop columns with NaNs
         X = concat_df.drop(columns=concat_df.columns[concat_df.isnull().any()])
@@ -122,7 +123,7 @@ class OtterTuneSimilarity(InstanceSimilarity):
         X = X.drop(columns=[c for c in drop_cols if c in X.columns], errors='ignore')
 
         # Factor Analysis
-        fa = FactorAnalysis(random_state=42)
+        fa = FactorAnalysis()
         X_t = X.T  # shape => (n_features, n_samples)
         U = fa.fit_transform(X_t)  # shape => (n_features, n_components)
 
@@ -505,7 +506,7 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
         config = self.config
         if config is None:
             config = {
-                "batch_size": 64,
+                "batch_size": 256,
                 "hidden_size": 64,
                 "learning_rate": 0.001,
                 "num_epochs": 100,
@@ -668,7 +669,7 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
         csv_files = glob.glob(os.path.join(self.data_dir, "*.csv"))
         dfs = []
         for file_path in csv_files:
-            if "train.csv" in file_path or "88c190g" in file_path or file_path.endswith("1.csv"):
+            if "train.csv" in file_path or "88c190g" in file_path:
                 continue
             dfs.append(pd.read_csv(file_path))
 
