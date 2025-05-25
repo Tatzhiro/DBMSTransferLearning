@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from copy import deepcopy
 
-from regression.proposed import TransferLearning
+from regression.transfer_learning.transfer_learning import TransferLearning
 from regression.jamshidi import L2SFeatureSelector
 from regression.utils import epsilon_greedy, set_unimportant_columns_to_one_value
 
