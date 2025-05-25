@@ -36,11 +36,25 @@ def main(cfg: DictConfig) -> None:
     models = cfg.models
     sizes = cfg.sizes
     num_trial = cfg.num_trial
+    
+    target_data_path = cfg.target_data_path
+    target_workload = cfg.workload
+    system = instantiate(cfg.system)
+    # static context similarity
+    source_df = None
+    if cfg.static_context_similarity is not None:
+        static_context_similarity = instantiate(cfg.static_context_similarity)
+        
+        datasets = static_context_similarity.get_datasets(target_data_path, target_workload)
+        print(f"Using {datasets[0].workload_label}, {datasets[0].hardware_label} as base data")
+        source_df = datasets[0].df
+        source_df = source_df[system.get_param_names() + [system.get_perf_metric()]]
 
     df_mean = pd.DataFrame(index=sizes)
     for key in models:
         print(f"validation start: {models[key].name}")
         pipeline = instantiate(cfg.models[key].pipeline)
+        pipeline.base_df = source_df
         trials = simulate(pipeline, sizes, num_trial)
         mean_scores = [np.nanmean(trials[size]) for size in sizes]
         df_mean[f"{models[key].name}"] = mean_scores
