@@ -45,10 +45,6 @@ class TransferLearning(ABC):
             self.iter += 1
         self.fit()
 
-    @abstractmethod
-    def select_important_parameters(self) -> list[str]:
-        pass
-    
     def calculate_mean_performance_groupedby_params(self, df: DataFrame, parameters: list[str]) -> DataFrame:
         df = drop_unimportant_parameters(df, parameters, self.system)
         df = df.groupby(parameters)[self.system.get_perf_metric()].mean().reset_index()
