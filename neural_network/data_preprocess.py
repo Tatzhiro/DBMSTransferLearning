@@ -1,6 +1,142 @@
 import pandas as pd
 import glob
 import re
+import numpy as np
+from regression.system_configuration import MySQLConfiguration
+from regression.jamshidi import L2SFeatureSelector, LassoFeatureSelector
+from regression.utils import drop_unimportant_parameters
+import os
+from IPython import embed
+
+class FeatureImportance:
+    def __init__(self, df: pd.DataFrame, system: MySQLConfiguration):
+        self.df = df
+        self.system = system
+        
+        
+    def get_range(self, df: pd.DataFrame):
+        min = df[self.system.get_perf_metric()].quantile(0.01)
+        max = df[self.system.get_perf_metric()].quantile(0.99)
+        return max - min
+        
+    
+    def get_parameter_vector(self):
+        vector = np.zeros(len(self.system.get_param_names()))
+        
+        for i, p in enumerate(self.system.get_param_names()):
+            df = self.df
+            df = drop_unimportant_parameters(df, [p], self.system)
+            range = self.get_range(df)
+            vector[i] = range
+        
+        vector = vector / np.sum(vector)
+        return vector
+    
+
+def label():
+    df = pd.read_csv("dataset/metric_learning/train.csv")
+    contexts = df[["workload_label", "num_cpu", "mem_size"]]
+    contexts = contexts.drop_duplicates()
+    for context in contexts.iterrows():
+        workload = context[1]["workload_label"]
+        num_cpu = context[1]["num_cpu"]
+        mem_size = context[1]["mem_size"]
+        try:
+            param_df = pd.read_csv(f"dataset/transfer_learning/mysql/chimera_tech/{num_cpu}c{mem_size}g-result.csv")
+            if "workload_label" not in param_df.columns:
+                param_df["workload_label"] = param_df["num_table"].astype(str) + "-" + param_df["table_size"].astype(str) + "-" + param_df["num_client"].astype(str) + "-" + param_df["workload"].astype(str) + "-" + param_df["skew"].astype(str)
+                param_df = param_df.drop(["num_table", "table_size", "num_client", "workload", "skew"], axis=1)
+                param_df.to_csv(f"dataset/transfer_learning/mysql/chimera_tech/{num_cpu}c{mem_size}g-result.csv", index=False)
+            param_df = MySQLConfiguration().preprocess_param_values(param_df)
+            
+            df_workload = param_df[(param_df["workload_label"] == workload)]
+            fi = FeatureImportance(df_workload, MySQLConfiguration())
+            vector = fi.get_parameter_vector()
+        except:
+            print(f"File not found: {workload} {num_cpu}c{mem_size}g-result.csv")
+            param_df = pd.read_csv(f"dataset/transfer_learning/mysql/raw_data/{num_cpu}c{mem_size}g-result.csv")
+            if "workload_label" not in param_df.columns:
+                param_df["workload_label"] = param_df["num_table"].astype(str) + "-" + param_df["table_size"].astype(str) + "-" + param_df["num_client"].astype(str) + "-" + param_df["workload"].astype(str) + "-" + param_df["skew"].astype(str)
+                param_df = param_df.drop(["num_table", "table_size", "num_client", "workload", "skew"], axis=1)
+                # param_df.to_csv(f"dataset/transfer_learning/mysql/chimera_tech/{num_cpu}c{mem_size}g-result.csv", index=False)
+            param_df = MySQLConfiguration().preprocess_param_values(param_df)
+            
+            df_workload = param_df[(param_df["workload_label"] == workload)]
+            fi = FeatureImportance(df_workload, MySQLConfiguration())
+            vector = fi.get_parameter_vector()
+        
+        if vector is None:
+            print(f"Vector is None: {workload} {num_cpu}c{mem_size}g-result.csv")
+            continue
+
+        df.loc[(df["workload_label"] == workload) & (df["num_cpu"] == num_cpu), "label"] = df.apply(lambda x: vector, axis=1)
+        
+    for i in [4, 8, 12, 16, 24, 32]:
+        df[df["num_cpu"] == i].to_csv(f"dataset/{i}.csv", index=False)
+        
+    df.to_csv("dataset/train.csv", index=False)
+            
+
+
+def main():
+    label()
+    exit()
+    metric_file_list = sorted(glob.glob('dataset/metric_learning/chimera_tech/*.csv'))
+    metric_file_list = [file for file in metric_file_list if "train" not in file]
+
+    dfs = []
+    for file in metric_file_list:
+        metric_df = pd.read_csv(file)
+        metric_df = unify_metrics(metric_df)
+        metric_df = rename_columns(metric_df)
+        df = metric_df.copy()
+        # param_df = pd.read_csv(f"dataset/transfer_learning/mysql/chimera_tech/{file.split('/')[-1]}")
+        # df = pd.merge(metric_df, param_df, on='id', how='inner')
+        # if "label" not in df.columns:
+        #     # get set of workload parameters
+        #     workloads = df[["num_table", "table_size", "num_client", "workload", "skew"]]
+        #     workloads = workloads.drop_duplicates()
+        #     # remove first row because it might be a warm-up
+        #     df = df.iloc[1:]
+        #     for workload in workloads.iterrows():
+        #         mask = (
+        #             (df["num_table"] == workload[1]["num_table"]) &
+        #             (df["table_size"] == workload[1]["table_size"]) &
+        #             (df["num_client"] == workload[1]["num_client"]) &
+        #             (df["workload"] == workload[1]["workload"]) &
+        #             (
+        #                 (pd.isna(df["skew"]) & pd.isna(workload[1]["skew"])) | 
+        #                 (df["skew"] == workload[1]["skew"])
+        #             )
+        #         )
+        #         df_workload = df[mask]
+        #         fi = FeatureImportance(df_workload, MySQLConfiguration())
+        #         vector = fi.get_parameter_vector()
+        #         df.loc[mask, "label"] = df.loc[mask].apply(lambda x: vector, axis=1)
+        # if "workload_label" not in df.columns:
+        #     df["workload_label"] = df["num_table"].astype(str) + "-" + df["table_size"].astype(str) + "-" + df["num_client"].astype(str) + "-" + df["workload"].astype(str) + "-" + df["skew"].astype(str)
+        #     df = df.drop(["num_table", "table_size", "num_client", "workload", "skew"], axis=1)
+        # if "num_cpu" not in df.columns:
+        #     num_cpu = file.split('/')[-1].split("c")[0]
+        #     mem_size = file.split('/')[-1].split("c")[1].split("g")[0]
+        #     df["mem_size"] = mem_size
+        #     df["num_cpu"] = num_cpu
+        
+        # select 12 rows for each workload
+        df = df.groupby("workload_label").head(12)
+        
+        dfs.append(df)
+        # for param in MySQLConfiguration().get_param_names():
+        #     df = df[df[param] == MySQLConfiguration().get_default_param_values()[param]]
+        # remove unnecessary columns
+        # df = df.drop(MySQLConfiguration().get_param_names(), axis=1)
+        # df.to_csv(f"dataset/transfer_learning/mysql/merge/{file.split('/')[-1]}", index=False)
+        
+    # merge all dataframes
+    merged_df = pd.concat(dfs, ignore_index=True)
+    merged_df.to_csv("dataset/metric_learning/train_1.csv", index=False)
+    
+    
 
 def rename_columns(df):
     metric_mapping = {
@@ -189,26 +325,29 @@ def unify_metrics(df):
     
     return df
 
+if __name__ == "__main__":
+    label()
 
-metric_file_list = sorted(glob.glob('dataset/metric_learning/*.csv'))
-metric_file_list = [file for file in metric_file_list if "train" not in file]
 
-for file in metric_file_list:
-    metric_df = pd.read_csv(file)
-    metric_df = unify_metrics(metric_df)
-    metric_df = rename_columns(metric_df)
+# metric_file_list = sorted(glob.glob('dataset/metric_learning/*.csv'))
+# metric_file_list = [file for file in metric_file_list if "train" not in file]
+
+# for file in metric_file_list:
+#     metric_df = pd.read_csv(file)
+#     metric_df = unify_metrics(metric_df)
+#     metric_df = rename_columns(metric_df)
     
-    param_df = pd.read_csv(f"dataset/transfer_learning/mysql/chimera_tech/{file.split('/')[-1]}")
-    df = pd.merge(metric_df, param_df, on='id', how='inner')
-    if "workload_label" not in df.columns:
-        df["workload_label"] = df["num_table"].astype(str) + "-" + df["table_size"].astype(str) + "-" + df["num_client"].astype(str) + "-" + df["workload"].astype(str) + "-" + df["skew"].astype(str)
-        df = df.drop(["num_table", "table_size", "num_client", "workload", "skew"], axis=1)
-    if "num_cpu" not in df.columns:
-        num_cpu = file.split('/')[-1].split("c")[0]
-        mem_size = file.split('/')[-1].split("c")[1].split("g")[0]
-        df["mem_size"] = mem_size
-        df["num_cpu"] = num_cpu
-    df.to_csv(f"dataset/transfer_learning/mysql/merge/{file.split('/')[-1]}", index=False)
+#     param_df = pd.read_csv(f"dataset/transfer_learning/mysql/chimera_tech/{file.split('/')[-1]}")
+#     df = pd.merge(metric_df, param_df, on='id', how='inner')
+#     if "workload_label" not in df.columns:
+#         df["workload_label"] = df["num_table"].astype(str) + "-" + df["table_size"].astype(str) + "-" + df["num_client"].astype(str) + "-" + df["workload"].astype(str) + "-" + df["skew"].astype(str)
+#         df = df.drop(["num_table", "table_size", "num_client", "workload", "skew"], axis=1)
+#     if "num_cpu" not in df.columns:
+#         num_cpu = file.split('/')[-1].split("c")[0]
+#         mem_size = file.split('/')[-1].split("c")[1].split("g")[0]
+#         df["mem_size"] = mem_size
+#         df["num_cpu"] = num_cpu
+#     df.to_csv(f"dataset/transfer_learning/mysql/merge/{file.split('/')[-1]}", index=False)
     
     
     # import pandas as pd

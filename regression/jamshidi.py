@@ -372,8 +372,9 @@ class MultiImportanceFeatureSelector(ImportanceFeatureSelector):
                 matrix[i][j] = range
 
         # Normalize the vector so that the effects sum to 1
-        print("full matrix", full_matrix)
+        print("full matrix\n", full_matrix)
         matrix = matrix / np.sum(matrix)
+        print("matrix\n", matrix)
         return matrix
 
 
@@ -382,7 +383,7 @@ class MultiImportanceFeatureSelector(ImportanceFeatureSelector):
         max = df[self.system.get_perf_metric()].quantile(0.99)
         if max / min < threshold_factor:
             return 0
-        return max - min
+        return max / min
     
     
     def q_is_important(self, df, p, q):
@@ -395,7 +396,7 @@ class MultiImportanceFeatureSelector(ImportanceFeatureSelector):
             # 99th percentile of q
             min = df_p[self.system.get_perf_metric()].quantile(0.01)
             max = df_p[self.system.get_perf_metric()].quantile(0.99)
-            if max > 2 * min:
+            if max / min > 2:
                 return True
         return False
         

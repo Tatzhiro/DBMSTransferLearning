@@ -56,7 +56,7 @@ class OtterTuneSimilarity(InstanceSimilarity):
     """
     _distinct_metrics = None
 
-    def __init__(self, system: MySQLConfiguration, data_dir: str):
+    def __init__(self, system: MySQLConfiguration, data_dir: str, excluding_factors=["hardware", "workload"]):
         """
         Parameters
         ----------
@@ -67,6 +67,7 @@ class OtterTuneSimilarity(InstanceSimilarity):
         """
         self.system = system
         self.data_dir = data_dir
+        self.excluding_factors = excluding_factors
 
     @property
     def distinct_metrics(self):
@@ -96,11 +97,13 @@ class OtterTuneSimilarity(InstanceSimilarity):
             file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
 
             # Exclude matching hardware
-            if file_hardware == hardware_label:
+            if file_hardware == hardware_label and "hardware" in self.excluding_factors:
                 continue
 
             # Exclude matching workload
-            df = df[df["workload_label"] != workload_label]
+            if "workload" in self.excluding_factors:
+                df = df[df["workload_label"] != workload_label]
+                
             dfs.append(df)
 
         if not dfs:
@@ -108,13 +111,16 @@ class OtterTuneSimilarity(InstanceSimilarity):
             return []
 
         concat_df = pd.concat(dfs, ignore_index=True)
-        concat_df = concat_df[concat_df['workload_label'] != workload_label]
-        concat_df["hardware_label"] = concat_df.apply(
-            lambda row: f"{row['num_cpu']}c{row['mem_size']}g", axis=1
-        )
-        concat_df = concat_df[concat_df['hardware_label'] != hardware_label]
         
         # concat_df = pd.read_csv("dataset/metric_learning/train.csv")
+        if "workload" in self.excluding_factors:
+            concat_df = concat_df[concat_df['workload_label'] != workload_label]
+        if "hardware" in self.excluding_factors:
+            # Generate hardware label for filtering
+            concat_df["hardware_label"] = concat_df.apply(
+                lambda row: f"{row['num_cpu']}c{row['mem_size']}g", axis=1
+            )
+            concat_df = concat_df[concat_df['hardware_label'] != hardware_label]
 
         # Drop columns with NaNs
         X = concat_df.drop(columns=concat_df.columns[concat_df.isnull().any()])
@@ -149,7 +155,7 @@ class OtterTuneSimilarity(InstanceSimilarity):
         hardware_label = f"{target_df['num_cpu'].iloc[0]}c{target_df['mem_size'].iloc[0]}g"
 
 
-        metrics_path = f"neural_network/metrics/{workload_label}_{hardware_label}.txt"
+        metrics_path = f"neural_network/metrics/exclude-{'-'.join(self.excluding_factors)}/{workload_label}_{hardware_label}.txt"
         if os.path.exists(metrics_path):
             with open(metrics_path, 'r') as f:
                 metrics = f.read().splitlines()
@@ -187,7 +193,7 @@ class OtterTuneSimilarity(InstanceSimilarity):
         for df in dfs:
             # Skip same hardware
             file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
-            if file_hardware == hardware_label:
+            if file_hardware == hardware_label and "hardware" in self.excluding_factors:
                 continue
 
             # Drop NaN columns
@@ -195,7 +201,7 @@ class OtterTuneSimilarity(InstanceSimilarity):
            
             workloads = df['workload_label'].unique()
             for wl in workloads:
-                if wl == workload_label:
+                if wl == workload_label and "workload" in self.excluding_factors:
                     continue
 
                 data = df[df['workload_label'] == wl]
@@ -411,11 +417,12 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
             prob = F.softmax(logit, dim=1)
             return prob
 
-    def __init__(self, system, data_dir: str, train_dir: str, seed: int = 42):
+    def __init__(self, system, data_dir: str, train_dir: str, seed: int = 42, excluding_factors=["hardware", "workload"]):
         self.system = system
         self.data_dir = data_dir
         self.train_dir = train_dir
         self.config = None
+        self.excluding_factors = excluding_factors
         self.set_seed(seed)
 
     @property
@@ -475,8 +482,10 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
             lambda row: f"{row['num_cpu']}c{row['mem_size']}g", axis=1
         )
         # Filter out data matching hardware_label or workload_label
-        data = data[data["hardware_label"] != hardware_label]
-        data = data[data['workload_label'] != workload_label]
+        if "hardware" in self.excluding_factors:
+            data = data[data["hardware_label"] != hardware_label]
+        if "workload" in self.excluding_factors:
+            data = data[data['workload_label'] != workload_label]
 
         # Choose columns as you wish
         columns = [
@@ -515,8 +524,8 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
             }
             
             
-        os.makedirs(f"neural_network/weights/{json.dumps(config)}", exist_ok=True)
-        model_path = f"neural_network/weights/{json.dumps(config)}/{workload_label}_{hardware_label}.pt"
+        os.makedirs(f"neural_network/weights/{json.dumps(config)}/exclude-{'-'.join(self.excluding_factors)}", exist_ok=True)
+        model_path = f"neural_network/weights/{json.dumps(config)}/exclude-{'-'.join(self.excluding_factors)}/{workload_label}_{hardware_label}.pt"
         if os.path.exists(model_path):
             print(f"Model already exists at {model_path}. Loading...")
             checkpoint = torch.load(model_path)
@@ -676,14 +685,14 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
         divergences = []
         for df in dfs:
             file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
-            if file_hardware == hardware_label:
+            if file_hardware == hardware_label and "hardware" in self.excluding_factors:
                 continue
 
             df = df.drop(columns=df.columns[df.isnull().any()], errors="ignore")
             workloads = df['workload_label'].unique()
 
             for wl in workloads:
-                if wl == workload_label:
+                if wl == workload_label and "workload" in self.excluding_factors:
                     continue
                 subset = df[df['workload_label'] == wl]
                 if 'label' not in subset.columns or len(subset) == 0:
@@ -782,7 +791,7 @@ class ParameterImportanceSimilarity(InstanceSimilarity):
         return average_div, results
         
 
-def evaluate_similarity(target_csv, workload_label, similar_datasets, system, data_dir, plot=False):
+def evaluate_similarity(target_csv, workload_label, similar_datasets, system, data_dir, plot=False, excluding_factors=["hardware", "workload"]):
     """
     Outputs the actual similarity scores and the most similar datasets.
     """
@@ -811,7 +820,7 @@ def evaluate_similarity(target_csv, workload_label, similar_datasets, system, da
     similar_context = [(entry.workload_label, entry.hardware_label) for entry in similar_datasets]
     for df in dfs:
         file_hardware = f"{df['num_cpu'].iloc[0]}c{df['mem_size'].iloc[0]}g"
-        if file_hardware == hardware_label:
+        if file_hardware == hardware_label and "hardware" in excluding_factors:
             # Skip same hardware
             continue
 
@@ -819,7 +828,7 @@ def evaluate_similarity(target_csv, workload_label, similar_datasets, system, da
 
         workloads = df['workload_label'].unique()
         for wl in workloads:
-            if wl == workload_label:
+            if wl == workload_label and "workload" in excluding_factors:
                 continue
             subset = df[df['workload_label'] == wl]
             if 'label' not in subset.columns or len(subset) == 0:
@@ -885,7 +894,8 @@ def main():
     Example usage of the refactored similarity classes.
     """
     data_dir = "dataset/metric_learning/chimera_tech"
-    target_csv = os.path.join(data_dir, "88c190g-result.csv")
+    hardware_label = "88c190g"
+    target_csv = os.path.join(data_dir, f"{hardware_label}-result.csv")
     workloads = [
         "64-1000000-4-oltp_read_only-0.2",
         "64-1000000-4-oltp_read_only-0.6",
@@ -911,14 +921,21 @@ def main():
         "10-4-4-tpcc-nan",
         "100-4-4-tpcc-nan",
     ]
+    excluding_factors = ["hardware", "workload"]
+    output_name = f"similarity_scores_exclude-{'-'.join(excluding_factors)}_target-{hardware_label}"
     
     param_similarity = ParameterImportanceSimilarity(
         system=MySQLConfiguration(),
         data_dir=data_dir,
-        train_dir="dataset/metric_learning"
+        train_dir="dataset/metric_learning",
+        excluding_factors=excluding_factors
     )
     param_similarity.loocv(target_csv, workloads)
-    ottertune_similarity = OtterTuneSimilarity(system=MySQLConfiguration(), data_dir=data_dir)
+    ottertune_similarity = OtterTuneSimilarity(
+        system=MySQLConfiguration(), 
+        data_dir=data_dir, 
+        excluding_factors=excluding_factors
+    )
     
     
     data = {"ChimeraTech (Proposed)": [], "OtterTune": []}
@@ -937,7 +954,7 @@ def main():
             print(f"Workload: {entry.workload_label}, Hardware: {entry.hardware_label}, Euclidean Distance: {entry.distance}")
             
         # Evaluate similarity scores
-        ottertune_result = evaluate_similarity(target_csv, workload_label, similar_datasets, MySQLConfiguration(), data_dir)
+        ottertune_result = evaluate_similarity(target_csv, workload_label, similar_datasets, MySQLConfiguration(), data_dir, excluding_factors=excluding_factors)
         data["OtterTune"].append(ottertune_result[0][2])
 
         # Example usage of ParameterImportanceSimilarity
@@ -953,33 +970,264 @@ def main():
             print(f"Workload: {entry.workload_label}, Hardware: {entry.hardware_label}, Similarity: {entry.distance}")
             
         # Evaluate similarity scores
-        param_sim_result = evaluate_similarity(target_csv, workload_label, similar_datasets_param, MySQLConfiguration(), data_dir)
+        param_sim_result = evaluate_similarity(target_csv, workload_label, similar_datasets_param, MySQLConfiguration(), data_dir, excluding_factors=excluding_factors)
         data["ChimeraTech (Proposed)"].append(param_sim_result[0][2])
         
-    
-    # Plot the results
-    print("\n[Similarity Scores]")
-    for workload_label in workloads:
-        print(f"Workload: {workload_label}, ChimeraTech: {data['ChimeraTech (Proposed)']}, OtterTune: {data['OtterTune']}")
-    fig, ax = plt.subplots(figsize=(20, 12))
-    x = np.arange(len(workloads))
-    width = 0.35
-    ax.bar(x - width/2, data["ChimeraTech (Proposed)"], width, label='ChimeraTech (Proposed)')
-    ax.bar(x + width/2, data["OtterTune"], width, label='OtterTune')
-    ax.set_ylabel('Similarity Score')
-    ax.set_title('Similarity Scores for Different Workloads')
-    ax.set_xticks(x)
-    short_labels = [w.replace("64-1000000-4-", "") for w in workloads]
-    ax.set_xticklabels(short_labels, rotation=45)
-    ax.legend()
-    plt.tight_layout()
-    plt.savefig("similarity_scores.pdf")
-    plt.close()
-    
     df = pd.DataFrame(data, index=workloads)
-    df.to_csv("similarity_scores.csv")
+    df.to_csv(f"{output_name}.csv")
+    
+    data = pd.read_csv(f"{output_name}.csv", index_col=0)
+        # Categorize into workload groups
+    def categorize(workload):
+        if "read_only" in workload:
+            return "RO"
+        elif "write_only" in workload:
+            return "WO"
+        elif "read_write_95" in workload:
+            return "RW_95"
+        elif "read_write_80" in workload:
+            return "RW_80"
+        elif "read_write_50" in workload:
+            return "RW_50"
+        elif "read_write_20" in workload:
+            return "RW_20"
+        elif "read_write_5" in workload:
+            return "RW_5"
+        elif "tpcc" in workload:
+            return "TPC-C"
+        else:
+            return "Other"
+
+    data["Group"] = data.index.map(categorize)
+
+    # Group by category and take mean
+    grouped_df = data.groupby("Group")[["ChimeraTech (Proposed)", "OtterTune"]].mean().reset_index()
+
+    # Custom order
+    custom_order = ["TPC-C", "RO", "WO", "RW_95", "RW_80", "RW_50", "RW_20", "RW_5"]
+    grouped_df = grouped_df.set_index("Group").loc[custom_order].reset_index()
+    plot_kl_divergence(grouped_df, custom_order, save_path=f"{output_name}.pdf")
+    
+    
+def wl():
+    data_dir = "dataset/metric_learning/chimera_tech"
+    hardware_label = "32c64g"
+    target_csv = os.path.join(data_dir, f"{hardware_label}-result.csv")
+    workloads = [
+        "64-1000000-4-oltp_read_only-0.2",
+        "64-1000000-4-oltp_read_only-0.6",
+        "64-1000000-4-oltp_read_only-1.0",
+        "64-1000000-4-oltp_write_only-0.2",
+        "64-1000000-4-oltp_write_only-0.6",
+        "64-1000000-4-oltp_write_only-1.0",
+        "64-1000000-4-oltp_read_write_95-0.2",
+        "64-1000000-4-oltp_read_write_95-0.6",
+        "64-1000000-4-oltp_read_write_95-1.0",
+        "64-1000000-4-oltp_read_write_80-0.2",
+        "64-1000000-4-oltp_read_write_80-0.6",
+        "64-1000000-4-oltp_read_write_80-1.0",
+        "64-1000000-4-oltp_read_write_50-0.2",
+        "64-1000000-4-oltp_read_write_50-0.6",
+        "64-1000000-4-oltp_read_write_50-1.0",
+        "64-1000000-4-oltp_read_write_20-0.2",
+        "64-1000000-4-oltp_read_write_20-0.6",
+        "64-1000000-4-oltp_read_write_20-1.0",
+        "64-1000000-4-oltp_read_write_5-0.2",
+        "64-1000000-4-oltp_read_write_5-0.6",
+        "64-1000000-4-oltp_read_write_5-1.0",
+        "10-4-4-tpcc-nan",
+        "100-4-4-tpcc-nan",
+    ]
+    excluding_factors = ["workload"]
+    
+    param_similarity = ParameterImportanceSimilarity(
+        system=MySQLConfiguration(),
+        data_dir=data_dir,
+        train_dir="dataset/metric_learning",
+        excluding_factors=excluding_factors
+    )
+    param_similarity.loocv(target_csv, workloads)
+    ottertune_similarity = OtterTuneSimilarity(
+        system=MySQLConfiguration(), 
+        data_dir=data_dir,
+        excluding_factors=excluding_factors
+    )
+    
+    
+    data = {"ChimeraTech (Proposed)": [], "OtterTune": []}
+    for workload_label in workloads:
+        print(f"\nTarget CSV: {target_csv}, Workload: {workload_label}")
+
+        ottertune_similarity.distinct_metrics = None
+        similar_datasets = ottertune_similarity.get_similar_datasets(
+            target_data_path=target_csv,
+            workload_label=workload_label,
+            n=1,
+            metadata=True
+        )
+        print("\n[OtterTuneSimilarity] Found similar datasets:")
+        for entry in similar_datasets:
+            print(f"Workload: {entry.workload_label}, Hardware: {entry.hardware_label}, Euclidean Distance: {entry.distance}")
+            
+        # Evaluate similarity scores
+        ottertune_result = evaluate_similarity(target_csv, workload_label, similar_datasets, MySQLConfiguration(), data_dir, excluding_factors=excluding_factors)
+        data["OtterTune"].append(ottertune_result[0][2])
+
+        # Example usage of ParameterImportanceSimilarity
+        param_similarity.model = None
+        similar_datasets_param = param_similarity.get_similar_datasets(
+            target_data_path=target_csv,
+            workload_label=workload_label,
+            n=1,
+            metadata=True
+        )
+        print("\n[ParameterImportanceSimilarity] Found similar datasets (metadata):")
+        for entry in similar_datasets_param:
+            print(f"Workload: {entry.workload_label}, Hardware: {entry.hardware_label}, Similarity: {entry.distance}")
+            
+        # Evaluate similarity scores
+        param_sim_result = evaluate_similarity(target_csv, workload_label, similar_datasets_param, MySQLConfiguration(), data_dir, excluding_factors=excluding_factors)
+        data["ChimeraTech (Proposed)"].append(param_sim_result[0][2])
+        
+    df = pd.DataFrame(data, index=workloads)
+    output_name = f"similarity_scores_exclude-{'-'.join(excluding_factors)}_target-{hardware_label}"
+    df.to_csv(f"{output_name}.csv")
+    
+    data = pd.read_csv(f"{output_name}.csv", index_col=0)
+        # Categorize into workload groups
+    def categorize(workload):
+        if "read_only" in workload:
+            return "RO"
+        elif "write_only" in workload:
+            return "WO"
+        elif "read_write" in workload:
+            return "RW"
+        elif "tpcc" in workload:
+            return "TPC-C"
+        else:
+            return "Other"
+
+    data["Group"] = data.index.map(categorize)
+
+    # Group by category and take mean
+    grouped_df = data.groupby("Group")[["ChimeraTech (Proposed)", "OtterTune"]].mean().reset_index()
+
+    # Custom order
+    custom_order = ["TPC-C", "RO", "WO", "RW"]
+    grouped_df = grouped_df.set_index("Group").loc[custom_order].reset_index()
+    plot_kl_divergence(grouped_df, custom_order, save_path=f"{output_name}.pdf")
+    
+    
+def hw():
+    """
+    Example usage of the refactored similarity classes.
+    """
+    data_dir = "dataset/metric_learning/chimera_tech"
+    hardwares = [
+        "4c6g",
+        "8c12g",
+        "12c16g",
+        "16c24g",
+        "24c32g",
+        "32c64g",
+        "88c190g",
+    ]
+    workload_label = "100-4-4-tpcc-nan"
+    excluding_factors = ["hardware"]
+    
+    param_similarity = ParameterImportanceSimilarity(
+        system=MySQLConfiguration(),
+        data_dir=data_dir,
+        train_dir="dataset/metric_learning",
+        excluding_factors=excluding_factors
+    )
+    # param_similarity.loocv(target_csv, workloads)
+    ottertune_similarity = OtterTuneSimilarity(
+        system=MySQLConfiguration(), 
+        data_dir=data_dir,
+        excluding_factors=excluding_factors
+    )
+    
+    
+    data = {"ChimeraTech (Proposed)": [], "OtterTune": []}
+    for hardware in hardwares:
+        target_csv = os.path.join(data_dir, f"{hardware}-result.csv")
+        print(f"\nTarget CSV: {target_csv}, Workload: {workload_label}, Hardware: {hardware}")
+
+        ottertune_similarity.distinct_metrics = None
+        similar_datasets = ottertune_similarity.get_similar_datasets(
+            target_data_path=target_csv,
+            workload_label=workload_label,
+            n=1,
+            metadata=True
+        )
+        print("\n[OtterTuneSimilarity] Found similar datasets:")
+        for entry in similar_datasets:
+            print(f"Workload: {entry.workload_label}, Hardware: {entry.hardware_label}, Euclidean Distance: {entry.distance}")
+            
+        # Evaluate similarity scores
+        ottertune_result = evaluate_similarity(target_csv, workload_label, similar_datasets, MySQLConfiguration(), data_dir, excluding_factors=excluding_factors)
+        data["OtterTune"].append(ottertune_result[0][2])
+
+        # Example usage of ParameterImportanceSimilarity
+        param_similarity.model = None
+        similar_datasets_param = param_similarity.get_similar_datasets(
+            target_data_path=target_csv,
+            workload_label=workload_label,
+            n=1,
+            metadata=True
+        )
+        print("\n[ParameterImportanceSimilarity] Found similar datasets (metadata):")
+        for entry in similar_datasets_param:
+            print(f"Workload: {entry.workload_label}, Hardware: {entry.hardware_label}, Similarity: {entry.distance}")
+            
+        # Evaluate similarity scores
+        param_sim_result = evaluate_similarity(target_csv, workload_label, similar_datasets_param, MySQLConfiguration(), data_dir, excluding_factors=excluding_factors)
+        data["ChimeraTech (Proposed)"].append(param_sim_result[0][2])
+    
+    hw_labels = [
+        "small",
+        "medium",
+        "large",
+        "xlarge",
+        "xxlarge",
+        "xxxlarge",
+        "prod"
+    ]
+    
+    df = pd.DataFrame(data, index=hw_labels)
+    output_name = f"similarity_scores_exclude-{'-'.join(excluding_factors)}_target-{workload_label}"
+    df.to_csv(f"{output_name}.csv")
+    
+    data = pd.read_csv(f"{output_name}.csv", index_col=0)
+    plot_kl_divergence(data, hw_labels, save_path=f"{output_name}.pdf")
     
 
+def plot_kl_divergence(
+    data,
+    indices, 
+    save_path="kl_divergence_plot.pdf"
+):
+    """
+    Plots the KL divergence between the target output and similar datasets.
+    """
+    # Plot the results
+    fig, ax = plt.subplots(figsize=(6.4, 4.8))
+    x = np.arange(len(indices))
+    width = 0.35
+    ax.bar(x - width/2, data["ChimeraTech (Proposed)"], width, label='ChimeraTech (Proposed)', color='red', zorder=3)
+    ax.bar(x + width/2, data["OtterTune"], width, label='OtterTune', color='blue', zorder=3)
+    ax.set_ylabel('KL Divergence', fontsize=24)
+    ax.set_xticks(x)
+    ax.tick_params(axis='y', labelsize=22)
+    ax.set_xticklabels(indices, fontsize=20)
+    ax.grid(True, axis='y', zorder=0)
+    # ax.legend()
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()
 
 if __name__ == "__main__":
     main()
+    # hw()
+    # wl()

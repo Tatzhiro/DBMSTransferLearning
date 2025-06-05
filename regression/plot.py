@@ -8,7 +8,7 @@ import pandas as pd
 
 class PlotDesign:
     def __init__(self, x_label: str, y_label: str, figsize: (int, int) = (6.4, 4.8),
-                 draw_x_ticks: list = True, x_tick_rotation: int = 0, x_tick_fontsize: int = 22,
+                 draw_x_ticks: list = True, x_tick_rotation: int = 0, x_tick_fontsize: int = 20,
                  xlim: list = None, ylim: list = None, legend_anchor: (float, float) = None,
                  fontsize: int = 22, line_width: int = 2, marker_size: int = 10,
                  line_colors: list[str] = ['red', 'blue', 'green', 'orange', 'purple', 'brown'], 
@@ -44,14 +44,21 @@ def plot_linegraph_from_df(df: DataFrame, design: PlotDesign, output_name: str):
         plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.0, symbol=''))
     
     plt.xlabel(f"{design.x_label}", fontsize=design.fontsize)
-    if design.x_ticks == True: plt.xticks(fontsize=design.x_tick_fontsize, rotation=design.x_tick_rotation) 
-    else: plt.xticks([])
+    if design.x_ticks == True: 
+        plt.xticks(fontsize=design.x_tick_fontsize, rotation=design.x_tick_rotation) 
+    else: 
+        plt.xticks([])
     plt.ylabel(f"{design.y_label}", fontsize=design.fontsize)
     plt.yticks(fontsize=design.fontsize)
-    plt.legend(fontsize=design.fontsize)  # Add legend to the plot
+    # plt.legend(fontsize=design.fontsize)  # Add legend to the plot
+    
     plt.grid(True)  # Add grid lines for better readability
     plt.tight_layout()
     plt.savefig(f"{output_name}", bbox_inches='tight')
+    
+    ax = plt.gca()
+    save_legends(ax, output_name.replace(".pdf", "_legend.pdf"))
+    
     plt.close()
     
     
@@ -59,7 +66,7 @@ def plot_bargraph(
     df: DataFrame, 
     design: PlotDesign, 
     output_name: str, 
-    thresholds: list = [30, 20, 10, 5],
+    thresholds: list = [20, 10, 5],
     group_width = 0.8,
     group_gap = 0.4):
     if ".pdf" not in output_name:
@@ -125,12 +132,12 @@ def plot_bargraph(
     x_ticks = [i * (group_width + group_gap) + group_width/2 for i in range(n_groups)]
     ax.set_xticks(x_ticks)
     ax.set_xticklabels(list(bar_df.index), fontsize=design.fontsize)
-
+    ax.tick_params(axis='y', labelsize=design.fontsize)
     # Add legend.
-    if design.legend_anchor is not None:
-        ax.legend(bbox_to_anchor=design.legend_anchor, ncol=3, fontsize=design.fontsize - 4)
-    else:
-        ax.legend(fontsize=design.fontsize - 4)
+    # if design.legend_anchor is not None:
+    #     ax.legend(bbox_to_anchor=design.legend_anchor, ncol=3, fontsize=design.fontsize - 4)
+    # else:
+    #     ax.legend(fontsize=design.fontsize - 4)
 
     plt.tight_layout()
     output_name = output_name.replace(".pdf", "_barplot.pdf")
@@ -142,7 +149,8 @@ def save_legends(ax, output_name: str):
     if ".pdf" not in output_name:
         output_name = output_name + ".pdf"
     legendFig = plt.figure("Legend plot")
-    legendFig.legend(*ax.get_legend_handles_labels(), loc='center', fontsize=22)
+    num_items = len(ax.get_legend_handles_labels()[0])
+    legendFig.legend(*ax.get_legend_handles_labels(), ncol=num_items, fontsize=22)
     legendFig.savefig(f"{output_name}", bbox_inches='tight')
     plt.close()
 

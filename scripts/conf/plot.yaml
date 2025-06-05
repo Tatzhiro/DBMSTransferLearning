@@ -26,16 +26,16 @@ evaluations:
         _target_: regression.plot_linegraph_from_df
       design:
         _target_: regression.PlotDesign
-        x_label: "Target Data Sample Size"
-        y_label: "Mean Absolute Percentage Error (%)"
+        x_label: "Sample Size\n(1 sample = 330 sec)"
+        y_label: "Mean Absolute\nPercentage Error (%)"
         marker_size: 6
-        figsize: [9, 6.5]
+        figsize: [6.4, 4.8]
     bar_plot:
       function:
         _target_: regression.plot_bargraph
       design:
         _target_: regression.PlotDesign
-        x_label: "Mean Absolute Percentage Error (%)"
-        y_label: "Sample Size\n(1 sample = 90 sec)"
+        x_label: "Mean Absolute\nPercentage Error (%)"
+        y_label: "Sample Size\n(1 sample = 330 sec)"
         legend_anchor: [1.4, 1.3]
         figsize: [6.4, 4.8]
