@@ -13,6 +13,7 @@ import numpy as np
 from sklearn.metrics import mean_absolute_percentage_error
 import warnings
 from sklearn.exceptions import ConvergenceWarning
+from pathlib import Path
 
 import sys
 
@@ -72,7 +73,17 @@ def main(cfg: DictConfig) -> None:
     instantiate(cfg.plot_function, df_std, plot_design, f"{output_name}_std.pdf")
 
     config_output_dir = f"{hydra_runtime_output_dir}/../../transfer_learning/{config_name}"
-    shutil.copytree(hydra_runtime_output_dir, config_output_dir, dirs_exist_ok=True)
+    copy_files_with_prefix(hydra_runtime_output_dir, config_output_dir, config_name)
+    
+def copy_files_with_prefix(src_dir, dst_dir, prefix):
+    src_dir = Path(src_dir)
+    dst_dir = Path(dst_dir)
+    dst_dir.mkdir(parents=True, exist_ok=True)
+
+    for file in src_dir.iterdir():
+        if file.is_file() and file.name.startswith(prefix):
+            shutil.copy(file, dst_dir)
+
 
 def custom_sort_key(index_str):
     # Split the index string into parts

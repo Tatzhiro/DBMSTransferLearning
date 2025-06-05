@@ -27,9 +27,11 @@ from regression.plot import plot_bargraph, PlotDesign
 from sklearn.gaussian_process.kernels import WhiteKernel,Exponentiation, DotProduct, RationalQuadratic, RBF, ConstantKernel, Matern, DotProduct
 
 def main():
+  plot3d()
+  # plot_wl_comparison()
 
   # legends()
-  plot_inv()
+  # plot_inv()
   # performance_function()
   # simulation()
   # distribution_distance()
@@ -64,6 +66,125 @@ def main():
 #   legendFig.savefig('legend.png')
   
 #   figlegend.legend(lines, ('Proposed Method', 'ModelShift', 'L2S', 'DataReuse', 'L2S+DataReuse'), 'center')
+
+
+def plot3d():
+    import pandas as pd
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib import cm
+    from matplotlib.colors import Normalize
+
+    # --- Data Setup ---
+    data = {
+        "innodb_buffer_pool_size": [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 6, 6, 6, 6,
+                                    8, 8, 8, 8, 9, 9, 9, 9, 12, 12, 12, 12, 16, 16, 16, 16,
+                                    18, 18, 18, 18, 24, 24, 24, 24],
+        "innodb_log_file_size": [0.004, 0.048, 0.512, 5.0] * 11,
+        "tps": [
+            405.1609, 515.4142, 560.1091, 575.9873,
+            417.24, 599.0764, 626.15, 660.4,
+            419.46, 660.8191, 673.22, 717.68,
+            423.03, 675.9636, 728.03, 796.3,
+            426.92, 684.7009, 761.63, 894.67,
+            424.32, 683.3418, 760.49, 894.23,
+            425.92, 685.9218, 756.3, 895.03,
+            427.16, 663.5891, 760.56, 895.42,
+            421.02, 672.6609, 756.11, 894.13,
+            432.81, 678.2227, 762.46, 900.28,
+            428.53, 679.8464, 758.28, 902.49
+        ]
+    }
+    df = pd.DataFrame(data)
+
+    # --- Grid Preparation ---
+    pivot = df.pivot(index="innodb_log_file_size", columns="innodb_buffer_pool_size", values="tps")
+    X_mixed, Y_log = np.meshgrid(pivot.columns.values, np.log10(pivot.index.values))
+    Z = pivot.values
+
+    # Color mapping (reversed blues, higher TPS = brighter)
+    norm = Normalize(vmin=np.min(Z), vmax=np.max(Z))
+    colors = cm.Blues_r(norm(Z))
+    log_y_vals = np.log10(pivot.index.values)
+
+    # --- Plotting ---
+    fig = plt.figure(figsize=(11, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_surface(X_mixed, Y_log, Z, facecolors=colors, edgecolor='k', linewidth=0.3, antialiased=True, shade=False)
+    
+    
+    tick_fontsize = 18
+    
+    filtered_xticks = [val for val in pivot.columns.values if val % 4 == 0]
+    ax.set_xticks(filtered_xticks)
+    ax.set_xticklabels(filtered_xticks, fontsize=tick_fontsize)
+    
+    ax.set_yticks(log_y_vals)
+    ax.set_yticklabels(pivot.index.values, fontsize=tick_fontsize)
+
+    ax.tick_params(axis='z', labelsize=tick_fontsize)
+
+    ax.zaxis.set_rotate_label(False)  # disable automatic rotation
+
+
+    ax.set_xlabel("innodb_buffer_pool_size\n(GB)", labelpad=30, fontsize=22)
+    ax.set_ylabel("innodb_log_file_size\n(GB, log scale)", labelpad=30, fontsize=22)
+    ax.set_zlabel("Throughput", labelpad=10, rotation=90, fontsize=22)
+
+    ax.view_init(elev=15, azim=-135)
+
+    # Save final figure
+    output_path = "log_buffer_surface.pdf"
+    # plt.subplots_adjust(bottom=0.05, top=1.1) 
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+
+
+
+def plot_wl_comparison():
+  # Data provided
+  df = pd.read_csv("similarity_scores.csv")
+
+  # Categorize into workload groups
+  def categorize(workload):
+      if "read_only" in workload:
+          return "RO"
+      elif "write_only" in workload:
+          return "WO"
+      elif "read_write" in workload:
+          return "RW"
+      elif "tpcc" in workload:
+          return "TPC-C"
+      else:
+          return "Other"
+
+  df["Group"] = df["Workload"].apply(categorize)
+
+  # Group by category and take mean
+  grouped_df = df.groupby("Group")[["ChimeraTech (Proposed)", "OtterTune"]].mean().reset_index()
+
+  # Custom order
+  custom_order = ["TPC-C", "RO", "WO", "RW"]
+  grouped_df = grouped_df.set_index("Group").loc[custom_order].reset_index()
+
+  # Plotting
+  fig, ax = plt.subplots(figsize=(8, 6))
+  bar_width = 0.35
+  x = range(len(grouped_df))
+
+  ax.bar([i - bar_width/2 for i in x], grouped_df["ChimeraTech (Proposed)"], width=bar_width, label="ChimeraTech (Proposed)")
+  ax.bar([i + bar_width/2 for i in x], grouped_df["OtterTune"], width=bar_width, label="OtterTune")
+
+  ax.set_xticks(x)
+  ax.set_xticklabels(grouped_df["Group"], fontsize=12)
+  ax.set_ylabel("Similarity Score", fontsize=13)
+  ax.set_title("Average Similarity Scores by Workload Group", fontsize=14)
+  ax.legend(fontsize=11)
+
+  plt.tight_layout()
+  plt.show()
+
   
 def plot_inv():
   df = pd.read_csv("outputs/transfer_learning/vanilla/vanilla.csv", index_col=0)
