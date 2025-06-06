@@ -26,6 +26,8 @@ class ChimeraTech(TransferLearning):
         self.target_df = target_df
         self.target_data_population = target_df.groupby(self.system.get_param_names())[self.system.get_perf_metric()].mean().reset_index()
         self.sampled_data = pd.DataFrame()
+        self.df_to_important_parameters = {}
+        self.important_parameters = None
         self.eer = 0.1
         self.iter = 0
         self.terminated = False
@@ -42,9 +44,10 @@ class ChimeraTech(TransferLearning):
             important_parameters = self.select_important_parameters(base_df)
             self.important_parameters = important_parameters
             self.df_to_important_parameters[key] = important_parameters
+            self.target_data_population = set_unimportant_columns_to_one_value(deepcopy(self.target_data_population), important_parameters, self.system)
             print(f"Selected important parameters: {important_parameters}")
             
-        important_parameter_space = set_unimportant_columns_to_one_value(deepcopy(self.target_data_population), important_parameters, self.system)
+        important_parameter_space = self.target_data_population
         while True:
             if len(important_parameter_space) == 0:
                 print("No more data to sample")
