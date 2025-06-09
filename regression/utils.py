@@ -58,9 +58,3 @@ def read_data_csv(filename: str, system: SystemConfiguration, workload: str):
 
 def epsilon_greedy(epsilon) -> bool:
     return np.random.uniform() < epsilon
-
-def getNumCore(spec_string):
-  return int(re.search(r'\d+', spec_string).group())
-
-def getMemSize(spec_string):
-  return int(re.search(r'\d+c(\d+)g', spec_string).group(1))

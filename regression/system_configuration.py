@@ -1,8 +1,8 @@
 from pandas import DataFrame
 import pandas as pd
-from regression.utils import getNumCore, getMemSize
 from abc import ABC, abstractmethod
 from IPython import embed
+import re
 
 
 class SystemConfiguration(ABC):
@@ -135,3 +135,10 @@ class MySQLConfiguration(SystemConfiguration):
         ]
         machine_specs = ["num_core", "mem_size"]
         super().__init__(perf_metric, param_names, machine_specs, machine_dependent_params, default_param_values)
+
+
+def getNumCore(spec_string):
+  return int(re.search(r'\d+', spec_string).group())
+
+def getMemSize(spec_string):
+  return int(re.search(r'\d+c(\d+)g', spec_string).group(1))
