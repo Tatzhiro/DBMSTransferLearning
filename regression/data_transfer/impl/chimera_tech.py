@@ -1,55 +1,87 @@
-from regression.proposed import TransferLearning
-from regression.instance_similarity import InstanceSimilarity, ParameterImportanceSimilarity
-from regression.jamshidi import ImportanceFeatureSelector, MultiImportanceFeatureSelector
-from regression.distribution_distance import BhattacharyyaDistance, SpearmanDistance
-from regression.utils import epsilon_greedy, set_unimportant_columns_to_one_value, read_data_csv
-
 import numpy as np
 import pandas as pd
 from copy import deepcopy
-import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression, RANSACRegressor
+
+from regression.data_transfer import DataTransfer
+from regression.context_retrieval import ContextSimilarity
+from regression.jamshidi import MultiImportanceFeatureSelector
+from regression.distribution_distance import BhattacharyyaDistance, SpearmanDistance
+from regression.utils import epsilon_greedy, set_unimportant_columns_to_one_value
 
 
-class ChimeraTech(TransferLearning):
-    def __init__(self, workload, system, target_data_path: str, instance_similarity: ParameterImportanceSimilarity):
+
+class ChimeraTech(DataTransfer):
+    def __init__(self, system, model, feature_selector=None):
         # self.distribution_distance = SpearmanDistance()
         # self.distance_threshold = 0.1
-        
-        self.feature_selector = None
+        self.system = system
+        self.model = model
+        self.feature_selector = feature_selector
+        self.df_to_important_parameter_space = {}
         # self.parameter_importance = instance_similarity.get_parameter_importance(target_data_path, workload)
-        super().__init__(workload, system, instance_similarity, None, target_data_path)
+        super().__init__()
         
-    def initialize(self):
+
+    class CacheEntry:
+        def __init__(self, important_parameter_space, important_parameters):
+            self.important_parameter_space = important_parameter_space
+            self.important_parameters = important_parameters
+        
+        
+    def initialize(self, target_df):
         np.random.seed(self.seed)
-        self.target_data_population = self.calculate_mean_performance_groupedby_params(self.target_df, self.parameters)
-        self.finetune_data = pd.DataFrame()
+        self.target_df = target_df
+        self.target_data_population = target_df.groupby(self.system.get_param_names())[self.system.get_perf_metric()].mean().reset_index()
+        self.sampled_data = pd.DataFrame()
+        self.df_to_important_parameter_space = {}
+        self.important_parameters = None
         self.eer = 0.1
         self.iter = 0
         self.terminated = False
+        self.src_context = None
+        
+        
+    def receive_contexts(self, source_contexts: list[ContextSimilarity]) -> None:
+        source_contexts.sort(key=lambda x: x.similarity, reverse=True)
+        self.src_context = source_contexts[0]
         
     
-    def run_next_iteration(self):
+    def run_next_iteration(self) -> None:
+        src_df = self.src_context.df
+        src_wl = self.src_context.workload
+        src_hw = self.src_context.hardware
+        key = (src_wl, src_hw)
+        if key in self.df_to_important_parameter_space:
+            entry = self.df_to_important_parameter_space[key]
+            important_parameter_space = entry.important_parameter_space
+            self.important_parameters = entry.important_parameters
+        else:
+            important_parameters = self.select_important_parameters(src_df)
+            self.important_parameters = important_parameters
+            important_parameter_space = set_unimportant_columns_to_one_value(deepcopy(self.target_data_population), important_parameters, self.system)
+            print(f"Selected important parameters: {important_parameters}")
+            
         while True:
-            if len(self.target_data_population) == 0:
+            if len(important_parameter_space) == 0:
                 print("No more data to sample")
                 self.terminated = True
                 return
             
             random_sampling = epsilon_greedy(self.eer)
             if random_sampling: 
-                sampled_row = self.target_data_population.sample(n=1, random_state=self.seed)
+                sampled_row = important_parameter_space.sample(n=1, random_state=self.seed)
             else:
                 sample_param = self.feature_selector.select_parameter_pair_to_sample()
-                target_data_population = deepcopy(self.target_data_population)
-                param_population = set_unimportant_columns_to_one_value(target_data_population, sample_param, self.system)
+                param_population = set_unimportant_columns_to_one_value(deepcopy(important_parameter_space), sample_param, self.system)
                 sampled_row = param_population.sample(n=1, random_state=self.seed)
                 
-            self.target_data_population = self.target_data_population.drop(sampled_row.index)
-            duplicate = self.finetune_data[self.finetune_data.eq(sampled_row.iloc[0]).all(axis=1)]
+            self.target_data_population = self.target_data_population.drop(sampled_row.index, errors='ignore')
+            important_parameter_space = important_parameter_space.drop(sampled_row.index)
+            duplicate = self.sampled_data[self.sampled_data.eq(sampled_row.iloc[0]).all(axis=1)]
             if len(duplicate) == 0:
                 break
-        self.finetune_data = pd.concat([self.finetune_data, sampled_row])
+        self.df_to_important_parameter_space[key] = self.CacheEntry(important_parameter_space, self.important_parameters)
+        self.sampled_data = pd.concat([self.sampled_data, sampled_row])
         
     
     # def reuse_data(self):
@@ -122,11 +154,11 @@ class ChimeraTech(TransferLearning):
     
             
     def fit(self) -> None:
-        params = self.parameters
+        params = self.important_parameters
         target = self.system.get_perf_metric()
         
-        X = self.finetune_data[params]
-        y = self.finetune_data[target]
+        X = self.sampled_data[params]
+        y = self.sampled_data[target]
         
         # past_data = self.reuse_data()
         
@@ -137,13 +169,13 @@ class ChimeraTech(TransferLearning):
         self.model.fit(X, y)
 
     def predict(self, df: pd.DataFrame) -> float:
-        important_params = self.parameters
+        important_params = self.important_parameters
         df = self.system.preprocess_param_values(df)
         return self.model.predict(df[important_params])
 
         
-    def select_important_parameters(self):
-        if self.feature_selector is None:
-            base_df = self.calculate_mean_performance_groupedby_params(self.base_df, self.system.get_param_names())
-            self.feature_selector = MultiImportanceFeatureSelector(base_df, self.system)
+    def select_important_parameters(self, df) -> list[str]:
+        if self.feature_selector is None or type(self.feature_selector) is MultiImportanceFeatureSelector:
+            df = self.calculate_mean_performance_groupedby_params(df, self.system.get_param_names())
+            self.feature_selector = MultiImportanceFeatureSelector(df, self.system)
         return self.feature_selector.select_important_features()

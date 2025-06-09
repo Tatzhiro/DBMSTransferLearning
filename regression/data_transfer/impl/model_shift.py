@@ -3,17 +3,14 @@
 import numpy as np
 import pandas as pd
 from copy import deepcopy
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
 
-from regression.transfer_learning.transfer_learning import TransferLearning
-from regression.instance_similarity import InstanceSimilarity
-from regression.jamshidi import L2SFeatureSelector
-from regression.utils import epsilon_greedy, set_unimportant_columns_to_one_value, drop_unimportant_parameters
+from regression.data_transfer import DataTransfer
+from regression.context_retrieval import ContextSimilarity
+from regression.utils import set_unimportant_columns_to_one_value
 
 
-class ModelShift(TransferLearning):
+class ModelShift(DataTransfer):
     def __init__(self, system, model, feature_selector=None):
         self.feature_selector = feature_selector
         self.system = system
@@ -23,10 +20,12 @@ class ModelShift(TransferLearning):
         self.df_to_model = {}
         super().__init__()
         
+
     class CacheEntry:
-        def __init__(self, model, important_parameters):
+        def __init__(self, model, important_parameters, important_parameter_space):
             self.model = model
             self.important_parameters = important_parameters
+            self.important_parameter_space = important_parameter_space
         
 
     def initialize(self, target_df):
@@ -36,28 +35,33 @@ class ModelShift(TransferLearning):
         self.sampled_data = pd.DataFrame()
         self.src_info_cache = {}
         self.important_parameters = None
-        self.eer = 0.1
         self.iter = 0
         self.terminated = False
+        self.src_context = None
+        
+    
+    def receive_contexts(self, source_contexts: list[ContextSimilarity]) -> None:
+        source_contexts.sort(key=lambda x: x.similarity, reverse=True)
+        self.src_context = source_contexts[0]
+        
 
-
-    def run_next_iteration(self, base_metadata: InstanceSimilarity.DatasetMetadata) -> None:
-        base_df = base_metadata.df
-        base_wl = base_metadata.workload_label
-        base_hw = base_metadata.hardware_label
-        key = (base_wl, base_hw)
+    def run_next_iteration(self) -> None:
+        src_df = self.src_context.df
+        src_wl = self.src_context.workload
+        src_hw = self.src_context.hardware
+        key = (src_wl, src_hw)
         if key in self.src_info_cache:
             cache_entry = self.src_info_cache[key]
             self.model = cache_entry.model
             self.important_parameters = cache_entry.important_parameters
+            self.base_data = set_unimportant_columns_to_one_value(deepcopy(src_df), self.important_parameters, self.system)
+            important_parameter_space = cache_entry.important_parameter_space
         else:
-            important_parameters = self.select_important_parameters(base_df)
-            self.model.fit(base_df[important_parameters], base_df[self.system.get_perf_metric()])
+            important_parameters = self.select_important_parameters(src_df)
             self.important_parameters = important_parameters
-            self.src_info_cache[key] = self.CacheEntry(self.model, important_parameters)
-            self.base_data = set_unimportant_columns_to_one_value(deepcopy(base_df), important_parameters, self.system)
-            self.target_data_population = set_unimportant_columns_to_one_value(deepcopy(self.target_data_population), important_parameters, self.system)
-            
+            self.model.fit(src_df[important_parameters], src_df[self.system.get_perf_metric()])
+            self.base_data = set_unimportant_columns_to_one_value(deepcopy(src_df), important_parameters, self.system)
+            important_parameter_space = set_unimportant_columns_to_one_value(deepcopy(self.target_data_population), important_parameters, self.system)
             
             
         important_parameter_space = self.target_data_population
@@ -74,6 +78,7 @@ class ModelShift(TransferLearning):
             duplicate = self.sampled_data[self.sampled_data.eq(sampled_row.iloc[0]).all(axis=1)]
             if len(duplicate) == 0:
                 break
+        self.src_info_cache[key] = self.CacheEntry(self.model, self.important_parameters, important_parameter_space)
         self.sampled_data = pd.concat([self.sampled_data, sampled_row])
 
     def fit(self) -> None:
