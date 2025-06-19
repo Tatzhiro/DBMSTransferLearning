@@ -1,0 +1,10 @@
+MySQL Handlers (Read First Record)
+MySQL Table Open Cache Efficiency
+Average CPU Usage (IRQ Mode)
+MySQL Table Definition Cache
+Total Memory
+InnoDB Rows Deleted (60s Rate)
+Total Memory Usage
+MySQL Range Selects (60s Rate)
+Average CPU Usage (IO Wait Mode)
+Root Volume Disk Usage

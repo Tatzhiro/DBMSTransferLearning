@@ -1,0 +1,9 @@
+MySQL Table Definition Cache Size
+Root Volume Disk Usage
+Average Network Retransmit Rate
+MySQL Table Open Cache Efficiency
+Total Memory
+InnoDB Rows Inserted (60s Rate)
+Average CPU Usage (User Mode)
+InnoDB Buffer Pool Cache Hit Rate
+Total Memory Usage

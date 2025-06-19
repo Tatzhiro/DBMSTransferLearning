@@ -1,0 +1,10 @@
+Root Volume Disk Usage Percentage
+MySQL Table Open Cache Efficiency
+Total Memory
+Average CPU Usage (Idle Mode)
+Average Network Retransmit Rate
+MySQL Rows Sorted (60s Rate)
+InnoDB Rows Updated (60s Rate)
+MySQL Full Table Scans (60s Rate)
+Current QPS (Queries Per Second)
+Root Volume Disk Usage

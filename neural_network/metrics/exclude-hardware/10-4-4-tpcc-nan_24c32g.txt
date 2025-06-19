@@ -1,0 +1,10 @@
+MySQL Thread Cache Size
+Root Volume Disk Usage
+MySQL Table Open Cache Efficiency
+Average CPU Usage (Idle Mode)
+Total Memory
+Max CPU Usage (100 - Idle)
+Average Memory Usage Percentage
+Average Network Retransmit Rate
+InnoDB Buffer Pool Cache Hit Rate
+MySQL Table Open Cache Hits (60s Rate)

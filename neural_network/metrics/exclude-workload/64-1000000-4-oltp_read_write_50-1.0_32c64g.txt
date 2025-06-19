@@ -1,0 +1,9 @@
+MySQL Client Threads Connected (Max Over Time)
+Root Volume Disk Usage
+Total Memory
+Average CPU Usage (IO Wait Mode)
+Average Network Retransmit Rate
+MySQL Open Files (InnoDB)
+Average CPU Usage (User Mode)
+InnoDB Buffer Pool Cache Hit Rate
+Average CPU Usage (Nice Mode)

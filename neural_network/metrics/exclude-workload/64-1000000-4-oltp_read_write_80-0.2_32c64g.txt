@@ -1,0 +1,8 @@
+Root Volume Disk Usage Percentage
+Average Network Retransmit Rate
+Total Memory
+Root Volume Disk Usage
+Total Memory Usage
+InnoDB Buffer Pool Total Pages
+Average CPU Usage (Nice Mode)
+MySQL Table Open Cache Efficiency

@@ -1,0 +1,9 @@
+Average CPU Usage (IRQ Mode)
+Total Memory
+Root Volume Disk Usage
+MySQL Table Open Cache Efficiency
+Average Network Retransmit Rate
+MySQL Threads Cached
+Average Memory Usage Percentage
+MySQL Table Definition Cache
+InnoDB Buffer Pool Cache Hit Rate

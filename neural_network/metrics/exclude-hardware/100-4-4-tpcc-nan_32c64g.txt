@@ -1,0 +1,6 @@
+MySQL Open Files Limit
+Average Network Retransmit Rate
+Total Memory
+Root Volume Disk Usage
+MySQL Opened Tables (60s Rate)
+Total Memory Usage

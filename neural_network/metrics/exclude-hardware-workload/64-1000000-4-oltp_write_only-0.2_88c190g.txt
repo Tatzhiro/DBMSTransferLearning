@@ -1,0 +1,9 @@
+Root Volume Disk Usage Percentage
+Root Volume Disk Usage
+Total Memory
+Average CPU Usage (Idle Mode)
+InnoDB Buffer Pool Cache Hit Rate
+MySQL Handlers (Delete)
+InnoDB Rows Deleted (60s Rate)
+InnoDB Buffer Pool Total Pages
+Total Memory Usage
