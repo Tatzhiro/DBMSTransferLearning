@@ -1,6 +1,7 @@
 outputs
 myenv
 */__pycache__/
+__pycache__
 */out
 old
 .vscode/
@@ -8,3 +9,5 @@ venv
 fig/
 scripts/conf
 wandb
+*.csv
+*.pdf

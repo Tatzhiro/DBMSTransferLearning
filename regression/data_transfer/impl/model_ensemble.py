@@ -93,7 +93,7 @@ class ModelEnsemble(DataTransfer):
         loo = LeaveOneOut()
         
         y_pred = cross_val_predict(
-            clone(self.model), X, y, cv=loo, method="predict"
+            self.model, X, y, cv=loo, method="predict", n_jobs=8
         ).ravel()
         
         diff_pred  = y_pred[:, None] - y_pred[None, :]
