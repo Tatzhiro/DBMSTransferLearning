@@ -1,0 +1,8 @@
+MySQL Table Open Cache Size
+Root Volume Disk Usage
+Total Memory
+Average CPU Usage (Idle Mode)
+Average Network Retransmit Rate
+MySQL Open Files
+Average Memory Usage Percentage
+MySQL Table Open Cache Efficiency

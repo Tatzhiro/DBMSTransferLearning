@@ -1,0 +1,10 @@
+MySQL Open Files Limit
+Total Memory
+Average Network Retransmit Rate
+Root Volume Disk Usage
+Total Memory Usage
+InnoDB Rows Updated (60s Rate)
+MySQL Handlers (Write)
+MySQL Table Open Cache Hits (60s Rate)
+Average Memory Usage Percentage
+MySQL Table Open Cache Efficiency

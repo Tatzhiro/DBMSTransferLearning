@@ -1,0 +1,10 @@
+MySQL Sort Scans (60s Rate)
+Root Volume Disk Usage
+Total Memory
+InnoDB Buffer Pool Total Pages
+Max CPU Usage (100 - Idle)
+MySQL Handlers (Delete)
+Total Memory Usage
+MySQL Rows Sorted (60s Rate)
+InnoDB Rows Read (60s Rate)
+MySQL Handlers (Key Read)

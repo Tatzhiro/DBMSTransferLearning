@@ -1,0 +1,6 @@
+Root Volume Disk Usage Percentage
+MySQL Table Open Cache Efficiency
+Total Memory
+Root Volume Disk Usage
+Average CPU Usage (Idle Mode)
+Average Network Retransmit Rate

@@ -1,0 +1,10 @@
+MySQL Open Files Limit
+Total Memory
+Root Volume Disk Usage
+Average CPU Usage (Idle Mode)
+Total Memory Usage
+InnoDB Rows Updated (60s Rate)
+Average Memory Usage Percentage
+InnoDB Buffer Pool Total Pages
+MySQL Open Files (InnoDB)
+MySQL Opened Tables (60s Rate)

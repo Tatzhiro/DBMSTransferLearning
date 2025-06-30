@@ -1,0 +1,8 @@
+MySQL Client Threads Connected (Max Over Time)
+MySQL Table Open Cache Efficiency
+Total Memory
+Root Volume Disk Usage
+Average Network Retransmit Rate
+MySQL Network Traffic (Bytes Sent)
+Max CPU Usage (100 - Idle)
+Total Memory Usage

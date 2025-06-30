@@ -1,0 +1,10 @@
+Average CPU Usage (IRQ Mode)
+Average Network Retransmit Rate
+MySQL Table Open Cache Efficiency
+MySQL Table Locks Immediate (60s Rate)
+Total Memory
+mem_size
+Root Volume Disk Usage
+MySQL Transaction Handlers (Prepare)
+Average CPU Usage (SoftIRQ Mode)
+Average Disk IOPS (Read)

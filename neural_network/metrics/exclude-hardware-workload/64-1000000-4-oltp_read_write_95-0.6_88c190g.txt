@@ -1,0 +1,10 @@
+mem_size
+Total Memory
+Root Volume Disk Usage
+Average CPU Usage (Idle Mode)
+Average Network Retransmit Rate
+MySQL Max Used Connections
+Total Memory Usage
+MySQL Opened Tables (60s Rate)
+Current QPS (Queries Per Second)
+MySQL Table Open Cache Hits (60s Rate)

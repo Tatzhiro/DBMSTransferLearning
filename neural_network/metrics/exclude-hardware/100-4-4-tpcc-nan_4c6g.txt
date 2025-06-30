@@ -1,0 +1,10 @@
+MySQL Range Selects (60s Rate)
+Root Volume Disk Usage
+Total Memory
+Total Memory Usage
+MySQL Handlers (External Lock)
+InnoDB Buffer Pool Total Pages
+InnoDB Dirty Buffer Pages
+MySQL Network Traffic (Bytes Received)
+MySQL Network Traffic (Bytes Sent)
+MySQL Uptime

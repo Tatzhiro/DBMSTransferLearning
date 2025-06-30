@@ -1,0 +1,9 @@
+MySQL Open Files Limit
+MySQL Table Open Cache Efficiency
+Total Memory
+Root Volume Disk Usage
+Average Network Retransmit Rate
+MySQL Handlers (Read Next Record).1
+Max CPU Usage (100 - Idle)
+Total Memory Usage
+Average CPU Usage (IO Wait Mode)

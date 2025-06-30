@@ -1,15 +1,21 @@
-# Project Structure
+# DBMS Transfer Learning
 
-* lineairdb/sample_format.csv: フォーマットの見本
-* lineairdb/env/build.sh: ビルドスクリプト
-* lineairdb/env/run.sh: 実験スクリプト
-* lineairdb/result/**.{csv,log}: 実験データ,実験時ログ
+## Project Structure
 
-# Requirement
-docker
+* scripts: Runnable scripts to compare transfer learning methods
+* regression: Internal Transfer Learning modules
+* dataset: DBMS performance data used for experiments
+* neural_network: Cache folder that holds MLP weights and others
 
-# How to Use It
+## How to run
+
+There are three experiments that can be run: `{context_retrieval, full_transfer, data_transfer}`.
+
+Run the following command with the experiment option of your choice.
+
+The outputs will be saved in `outputs/transfer_learning` directory
 
 ```shell
-$ lineairdb/benchmark.sh
+$ PYTHONPATH=. python scripts/batch.py ${EXPERIMENT_OPTION}
+Running full transfer…
 ```

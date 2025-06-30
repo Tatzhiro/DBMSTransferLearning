@@ -1,0 +1,10 @@
+MySQL Open Files Limit
+Root Volume Disk Usage
+Total Memory
+tps
+MySQL Threads Running (Max Over Time)
+InnoDB Rows Deleted (60s Rate)
+Total Memory Usage
+InnoDB Buffer Pool Total Pages
+Average CPU Usage (System Mode)
+MySQL Handlers (External Lock)

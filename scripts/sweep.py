@@ -1,5 +1,4 @@
-from regression.instance_similarity import ParameterImportanceSimilarity
-from regression.system_configuration import MySQLConfiguration
+from regression import ParameterImportanceRetrieval, MySQLConfiguration
 import wandb
 import os
 
@@ -19,7 +18,7 @@ workloads = [
 def study(config=None):
     with wandb.init(config=config):
         cfg = wandb.config
-        similarity = ParameterImportanceSimilarity(
+        similarity = ParameterImportanceRetrieval(
             system=MySQLConfiguration(),
             data_dir=data_dir,
             train_dir="dataset/metric_learning"

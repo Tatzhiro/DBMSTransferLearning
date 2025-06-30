@@ -4,6 +4,7 @@ import numpy as np
 from copy import deepcopy
 import warnings
 from IPython import embed
+import re
 
 
 def set_unimportant_columns_to_one_value(df: pd.DataFrame, important_params: list, system: SystemConfiguration) -> pd.DataFrame:

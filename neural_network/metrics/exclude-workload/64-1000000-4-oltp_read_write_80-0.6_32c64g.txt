@@ -1,0 +1,8 @@
+MySQL Open Files Limit
+Root Volume Disk Usage
+MySQL Table Open Cache Efficiency
+MySQL Open Files
+Average Network Retransmit Rate
+Total Memory
+Max CPU Usage (100 - Idle)
+InnoDB Buffer Pool Cache Hit Rate
