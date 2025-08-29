@@ -359,7 +359,7 @@ class ParameterImportanceRetrieval(StaticContextRetrieval):
                 kl_div = entropy(target_output_np.flatten(), output_np)
                 
                 param_df_path = f"dataset/transfer_learning/mysql/chimera_tech/{file_hardware}-result.csv"
-                param_df = read_data_csv(param_df_path, self.system, workload_label)
+                param_df = read_data_csv(param_df_path, self.system, wl)
                 
                 divergences.append(ContextSimilarity(param_df, wl, file_hardware, kl_div, -kl_div))
                 
