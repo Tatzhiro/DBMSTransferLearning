@@ -46,6 +46,11 @@ class Pipeline:
 
     def predict(self):
         return self.data_transfer.predict(self.target_df)
+    
+    
+    @property
+    def model(self):
+        return self.data_transfer.model
 
 
 class FastPipeline(Pipeline):

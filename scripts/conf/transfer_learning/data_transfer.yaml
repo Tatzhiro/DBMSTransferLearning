@@ -1,0 +1,99 @@
+# workload: "100-4-4-tpcc-nan"
+workload: "64-1000000-4-oltp_write_only-0.6"
+target_data_path: "dataset/transfer_learning/mysql/chimera_tech/88c190g-result.csv"
+system:
+    _target_: regression.MySQLConfiguration
+static_context_retrieval:
+    _target_: regression.ParameterImportanceRetrieval
+    system: ${system}
+    data_dir: "dataset/metric_learning/chimera_tech"
+    train_dir: "dataset/metric_learning/"
+context_retrieval:
+    _target_: regression.ContextRetrieval
+    static_context_retrieval: ${static_context_retrieval}
+    min_samples: 100000000
+kernel:
+    _target_: regression.Sum
+    k1: 
+        _target_: regression.Matern
+    k2:
+        _target_: regression.DotProduct
+model:
+    _target_: regression.Model
+    model:
+        _target_: regression.GaussianProcessRegressor
+        random_state: 0
+        kernel: ${kernel}
+
+models:
+    chimera:
+        name: "Libra (Proposed)"
+        pipeline:
+            _target_: regression.Pipeline
+            context_retrieval: ${context_retrieval}
+            data_transfer:
+                _target_: regression.ChimeraTech
+                system: ${system}
+                model: ${model}
+            target_workload: ${workload}
+            system: ${system}
+            target_data_path: ${target_data_path}
+    data_reuse:
+        name: "DataReuse"
+        pipeline:
+            _target_: regression.Pipeline
+            context_retrieval: ${context_retrieval}
+            data_transfer:
+                _target_: regression.DataReuse
+                system: ${system}
+                kernel: ${kernel}
+            target_workload: ${workload}
+            system: ${system}
+            target_data_path: ${target_data_path}
+    l2s:
+        name: "L2S"
+        pipeline:
+            _target_: regression.Pipeline
+            context_retrieval: ${context_retrieval}
+            data_transfer:
+                _target_: regression.L2S
+                system: ${system}
+                model: ${model}
+            target_workload: ${workload}
+            system: ${system}
+            target_data_path: ${target_data_path}
+    model_shift:
+        name: "ModelShift"
+        pipeline:
+            _target_: regression.Pipeline
+            context_retrieval: ${context_retrieval}
+            data_transfer:
+                _target_: regression.ModelShift
+                system: ${system}
+                model: ${model}
+                feature_selector:
+                    _target_: regression.L2SFeatureSelector
+                    system: ${system}
+            target_workload: ${workload}
+            system: ${system}
+            target_data_path: ${target_data_path}
+  # l2s_data_reuse:
+  #   name: "L2S Data Reuse"
+  #   pipeline:
+  #     _target_: regression.L2SDataReuse
+  #     workload: ${workload}
+  #     system: ${system}
+  #     target_data_path: ${target_data_path}
+  #     instance_similarity: ${instance_similarity}
+
+sizes: [20, 40, 80, 160, 240, 320, 400, 480, 560, 640]
+
+num_trial: 5
+
+plot_design:
+    _target_: regression.PlotDesign
+    x_label: "Target Data Sample Size"
+    y_label: "Mean Absolute Percentage Error"
+
+plot_function: 
+    _target_: regression.plot_linegraph_from_df
