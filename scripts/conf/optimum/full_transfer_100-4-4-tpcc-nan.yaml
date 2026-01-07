@@ -1,0 +1,95 @@
+kernel:
+  _target_: regression.Sum
+  k1:
+    _target_: regression.Matern
+  k2:
+    _target_: regression.DotProduct
+metric_sim_retrieval:
+  _target_: regression.MetricSimRetrieval
+  data_dir: dataset/metric_learning/chimera_tech
+  system: ${system}
+model:
+  _target_: regression.Model
+  model:
+    _target_: regression.GaussianProcessRegressor
+    kernel: ${kernel}
+    random_state: 0
+models:
+  chimera:
+    name: Libra (Proposed)
+    pipeline:
+      _target_: regression.Pipeline
+      context_retrieval:
+        _target_: regression.ContextRetrieval
+        min_samples: 100000000
+        static_context_retrieval: ${proposed_retrieval}
+      data_transfer:
+        _target_: regression.ChimeraTech
+        model: ${model}
+        system: ${system}
+      system: ${system}
+      target_data_path: ${target_data_path}
+      target_workload: ${workload}
+  ottertune:
+    name: OtterTune
+    pipeline:
+      _target_: regression.Pipeline
+      context_retrieval:
+        _target_: regression.ContextRetrieval
+        min_samples: 100000000
+        static_context_retrieval: ${metric_sim_retrieval}
+      data_transfer:
+        _target_: regression.DataReuse
+        kernel: ${kernel}
+        system: ${system}
+      system: ${system}
+      target_data_path: ${target_data_path}
+      target_workload: ${workload}
+  restune:
+    name: ResTune
+    pipeline:
+      _target_: regression.FastPipeline
+      context_retrieval:
+        _target_: regression.ContextRetrieval
+        dynamic_context_retrieval: ${pair_ranking_retrieval}
+        min_samples: 0
+      data_transfer:
+        _target_: regression.ModelEnsemble
+        model: ${model}
+        system: ${system}
+      system: ${system}
+      target_data_path: ${target_data_path}
+      target_workload: ${workload}
+num_trial: 5
+pair_ranking_retrieval:
+  _target_: regression.ConcordantRankingPairRetrieval
+  data_dir: dataset/transfer_learning/mysql/chimera_tech
+  system: ${system}
+plot_design:
+  _target_: regression.PlotDesign
+  x_label: 'Sample Size
+
+    (1 sample = 330 sec)'
+  y_label: Mean Absolute Percentage Error
+plot_function:
+  _target_: regression.plot_linegraph_from_df
+proposed_retrieval:
+  _target_: regression.ParameterImportanceRetrieval
+  data_dir: dataset/metric_learning/chimera_tech
+  system: ${system}
+  train_dir: dataset/metric_learning/
+sizes:
+- 20
+- 40
+- 80
+- 160
+- 240
+- 320
+- 400
+- 480
+- 560
+- 640
+system:
+  _target_: regression.MySQLConfiguration
+target_data_path: dataset/transfer_learning/mysql/chimera_tech/88c190g-result.csv
+workload: 100-4-4-tpcc-nan

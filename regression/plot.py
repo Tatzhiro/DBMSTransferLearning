@@ -5,6 +5,8 @@ from sklearn.metrics import r2_score
 from IPython import embed
 import numpy as np
 import pandas as pd
+import matplotlib.ticker as mtick
+
 
 class PlotDesign:
     def __init__(self, x_label: str, y_label: str, figsize: (int, int) = (6.4, 4.8),
@@ -32,34 +34,166 @@ def plot_linegraph_from_df(df: DataFrame, design: PlotDesign, output_name: str):
     if ".pdf" not in output_name:
         output_name = output_name + ".pdf"
         
-    plt.figure(figsize=design.figsize)  # Adjust the figure size if needed
+    plt.figure(figsize=design.figsize)
     
-    for column, color, style in zip(df.columns, design.line_colors, design.line_styles):
-        plt.plot(df.index, df[column], marker='x', label=column, color=color, linestyle=style, linewidth=design.line_width, markersize=design.marker_size)
+    # Detect model names by stripping _mean/_std suffixes
+    model_names = []
+    for col in df.columns:
+        if col.endswith("_mean") or col.endswith("_std"):
+            base_name = col.replace("_mean", "").replace("_std", "")
+            if base_name not in model_names:
+                model_names.append(base_name)
+    
+    for model_name, color, style in zip(model_names, design.line_colors, design.line_styles):
+        mean_col = f"{model_name}_mean"
+        std_col  = f"{model_name}_std"
+        if mean_col not in df.columns:
+            continue
+        
+        x = df.index
+        y = df[mean_col]
 
-    if design.xlim != None: plt.xlim(design.xlim)
-    if design.ylim != None: plt.ylim(design.ylim)
+        # Draw line + error bars (instead of shaded area)
+        if std_col in df.columns:
+            y_std = df[std_col]
+            plt.errorbar(
+                x, y, yerr=y_std,
+                marker='x', label=model_name, color=color,
+                linestyle=style, linewidth=design.line_width,
+                markersize=design.marker_size, capsize=4,  # capsize=4 adds little horizontal ticks
+            )
+        else:
+            plt.plot(
+                x, y, marker='x', label=model_name, color=color,
+                linestyle=style, linewidth=design.line_width, markersize=design.marker_size,
+            )
+
+    # Axes configuration
+    if design.xlim is not None:
+        plt.xlim(design.xlim)
+    if design.ylim is not None:
+        plt.ylim(design.ylim)
     if "%" in design.y_label:
-        import matplotlib.ticker as mtick
         plt.gca().yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.0, symbol=''))
     
-    plt.xlabel(f"{design.x_label}", fontsize=design.fontsize)
-    if design.x_ticks == True: 
-        plt.xticks(fontsize=design.x_tick_fontsize, rotation=design.x_tick_rotation) 
-    else: 
+    plt.xlabel(design.x_label, fontsize=design.fontsize)
+    if design.x_ticks:
+        plt.xticks(fontsize=design.x_tick_fontsize, rotation=design.x_tick_rotation)
+    else:
         plt.xticks([])
-    plt.ylabel(f"{design.y_label}", fontsize=design.fontsize)
+    plt.ylabel(design.y_label, fontsize=design.fontsize)
     plt.yticks(fontsize=design.fontsize)
-    # plt.legend(fontsize=design.fontsize)  # Add legend to the plot
     
-    plt.grid(True)  # Add grid lines for better readability
+    # plt.legend(fontsize=design.fontsize)
+    plt.grid(True)
     plt.tight_layout()
     plt.savefig(f"{output_name}", bbox_inches='tight')
-    
+
     ax = plt.gca()
     save_legends(ax, output_name.replace(".pdf", "_legend.pdf"))
-    
     plt.close()
+
+    
+def _get_mean_std(df: DataFrame, base_name: str):
+    """
+    Return (mean_series, std_series_or_None) for a given base name.
+    Works with either '<name>_mean'/'<name>_std' columns or raw '<name>' column.
+    """
+    mean_col = f"{base_name}_mean"
+    std_col  = f"{base_name}_std"
+    if mean_col in df.columns:  # preferred format
+        y = df[mean_col]
+        yerr = df[std_col] if std_col in df.columns else None
+        return y, yerr
+    # fallback to raw column (no error bars)
+    if base_name in df.columns:
+        return df[base_name], None
+    raise KeyError(f"Neither '{base_name}_mean' nor '{base_name}' found in DataFrame columns.")
+
+def _plot_line_with_err(ax, x, y, yerr, *, label, color, linestyle, lw, msize, capsize=4):
+    if yerr is not None:
+        ax.errorbar(
+            x, y, yerr=yerr,
+            marker='x', label=label, color=color,
+            linestyle=linestyle, linewidth=lw, markersize=msize, capsize=capsize
+        )
+    else:
+        ax.plot(
+            x, y, marker='x', label=label, color=color,
+            linestyle=linestyle, linewidth=lw, markersize=msize
+        )
+
+def plot_broken_axis_linegraph_from_df(
+    df: DataFrame,
+    design: PlotDesign,
+    output_name: str
+):
+    if ".pdf" not in output_name:
+        output_name = output_name + ".pdf"
+
+    fig, (ax_top, ax_bot) = plt.subplots(
+        2, 1, sharex=True, figsize=(design.figsize),
+        gridspec_kw={'height_ratios': [1, 2]}
+    )
+
+    x = df.index
+
+    # --- Top axis: OtterTune (higher range) ---
+    ax_top.yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.0, symbol=''))
+    y_ot, e_ot = _get_mean_std(df, "DataReuse")
+    _plot_line_with_err(
+        ax_top, x, y_ot, e_ot,
+        label="DataReuse", color="blue", linestyle='dotted',
+        lw=design.line_width, msize=design.marker_size
+    )
+    ax_top.set_ylim(0.22, 0.6)
+    ax_top.grid(True, zorder=0)
+
+    # --- Bottom axis: Libra (Proposed) + ResTune (lower range) ---
+    ax_bot.yaxis.set_major_formatter(mtick.PercentFormatter(xmax=1.0, symbol='', decimals=0))
+
+    y_lb, e_lb = _get_mean_std(df, "Libra (Proposed)")
+    _plot_line_with_err(
+        ax_bot, x, y_lb, e_lb,
+        label="Libra (Proposed)", color="red", linestyle='solid',
+        lw=design.line_width, msize=design.marker_size
+    )
+
+    y_rt, e_rt = _get_mean_std(df, "L2S")
+    _plot_line_with_err(
+        ax_bot, x, y_rt, e_rt,
+        label="L2S", color="green", linestyle='dashed',
+        lw=design.line_width, msize=design.marker_size
+    )
+    
+    y_ms, e_ms = _get_mean_std(df, "ModelShift")
+    _plot_line_with_err(
+        ax_bot, x, y_ms, e_ms,
+        label="ModelShift", color="orange", linestyle='dashed',
+        lw=design.line_width, msize=design.marker_size
+    )
+
+    ax_bot.set_ylim(0.0, 0.2)
+    ax_bot.set_xlabel(f"{design.x_label}", fontsize=design.fontsize)
+
+    # Keep your custom ticks; if you prefer to derive from data, replace with: ax_bot.set_xticks(x)
+    ax_bot.set_xticks([0, 100, 200, 300, 400, 500, 600])
+    ax_bot.set_yticks([0, 0.05, 0.10, 0.15])
+
+    ax_bot.grid(True, zorder=0)
+
+    # Tick params
+    for ax in [ax_top, ax_bot]:
+        ax.tick_params(axis='x', labelsize=design.x_tick_fontsize, rotation=design.x_tick_rotation)
+        ax.tick_params(axis='y', labelsize=design.fontsize)
+
+    # Shared Y label
+    fig.supylabel(design.y_label, fontsize=design.fontsize, ha='center', x=0.08, y=0.55)
+
+    plt.tight_layout()
+    plt.savefig(f"{output_name}", bbox_inches='tight')
+    plt.close()
+
     
     
 def plot_bargraph(
