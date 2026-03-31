@@ -6,7 +6,7 @@ from typing import List, Dict
 from sklearn.cluster import KMeans
 from sklearn.decomposition import FactorAnalysis
 
-from regression.utils import read_data_csv
+from regression.utils import read_data_csv, filter_default_config
 from regression.system_configuration import SystemConfiguration
 from regression.context_retrieval import StaticContextRetrieval, Context, ContextSimilarity
 
@@ -133,14 +133,15 @@ class MetricSimRetrieval(StaticContextRetrieval):
                     f.write(f"{metric}\n")
 
         target_df = target_df[target_df['workload_label'] == workload_label]
+        target_df = filter_default_config(target_df, self.system)
 
         # Focus only on the pruned metrics
         valid_metrics = [m for m in self.distinct_metrics if m in target_df.columns]
         # If no valid target rows exist, raise an error
         if len(target_df) == 0:
-            raise ValueError("No valid target rows found after preprocessing and param filtering.")
+            raise ValueError("No rows match default configuration for the given workload.")
 
-        # We'll compare using the first row as the target
+        # We'll compare using the first default-config row as the target
         target_metrics = target_df.iloc[[0]][valid_metrics].copy()
 
         # -----------------------------------------
@@ -199,19 +200,16 @@ class MetricSimRetrieval(StaticContextRetrieval):
         # -----------------------------------------
         distances = []
         for (data, file_hw, wl) in candidate_dfs:
-            # Binning each row in this candidate segment
-            data_for_dist = data[valid_metrics].copy()
+            # Filter to default configuration row
+            data_default = filter_default_config(data, self.system)
+            if data_default.empty:
+                continue
+
+            # Binning the default-config row
+            data_for_dist = data_default[valid_metrics].copy().iloc[[0]]
             for metric in valid_metrics:
                 edges = bin_edges_dict[metric]
                 data_for_dist[metric] = np.digitize(data_for_dist[metric], edges, right=True)
-
-            # Now compute distance (Euclidean) between binned_target and the entire candidate set.
-            # You might decide to average across rows, or just pick the first row, etc.
-            # Below, we flatten them so we can do a direct norm. Another approach is to pick
-            # a single representative row from `data_for_dist`.
-            
-            # get the single representative row
-            data_for_dist = data_for_dist.iloc[[0]]
             dist = np.linalg.norm(binned_target.values - data_for_dist.values)
             
             param_df_path = f"dataset/transfer_learning/mysql/chimera_tech/{file_hw}-result.csv"

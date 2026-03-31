@@ -319,6 +319,8 @@ def unify_metrics(df):
         else:
             # Multiple valid columns -> average them
             df[new_name] = df[valid_cols].mean(axis=1)
+            if "Average Disk IOPS" in new_name:
+                raise Exception("Check Average Disk IOPS unification logic.")
         
         # (Optional) Drop the original columns
         df.drop(columns=old_cols, inplace=True)
@@ -326,7 +328,45 @@ def unify_metrics(df):
     return df
 
 if __name__ == "__main__":
-    label()
+    # label()
+    metric_file_list = sorted(glob.glob('dataset/backup/*.csv'))
+    
+    columns = [
+        "tps",
+        "Average Memory Usage Percentage",
+        "InnoDB Buffer Pool Cache Hit Rate",
+        "InnoDB Dirty Buffer Pages", 
+        "Current QPS (Queries Per Second)",
+        "Max CPU Usage (100 - Idle)",
+        "InnoDB Rows Deleted (60s Rate)", "InnoDB Rows Inserted (60s Rate)",
+        "InnoDB Rows Read (60s Rate)", "InnoDB Rows Updated (60s Rate)",
+        "Average Disk IOPS (Read)", "Average Disk IOPS (Write)", 
+        "workload_label",
+        "parameter_importance",
+    ]
+
+    for file in metric_file_list:
+        metric_df = pd.read_csv(file)
+        metric_df = unify_metrics(metric_df)
+        metric_df = rename_columns(metric_df)
+        metric_df["workload_label"] = metric_df["num_table"].astype(str) + "-" + metric_df["table_size"].astype(str) + "-" + metric_df["num_client"].astype(str) + "-" + metric_df["workload"].astype(str) + "-" + metric_df["skew"].astype(str)
+        metric_df = metric_df.drop(["num_table", "table_size", "num_client", "workload", "skew"], axis=1)
+        metric_df = MySQLConfiguration().preprocess_param_values(metric_df)
+        
+        unique_workloads = metric_df["workload_label"].unique()
+        for workload in unique_workloads:
+            df_workload = metric_df[metric_df["workload_label"] == workload]
+            fi = FeatureImportance(df_workload, MySQLConfiguration())
+            vector = fi.get_parameter_vector()
+            vector_string = str(vector.tolist())
+            metric_df.loc[metric_df["workload_label"] == workload, "parameter_importance"] = vector_string
+        
+        # metric_df = metric_df[["id"] + MySQLConfiguration().get_param_names() + columns]
+        # add _full_metrics to the file name
+        # e.g. 4c6g-result_100k.csv -> 4c6g-result_100k_full_metrics.csv
+        save_name = file.split('/')[-1].split('.csv')[0] + "_full_metrics.csv"
+        metric_df.to_csv(save_name, index=False)
+        
 
 
 # metric_file_list = sorted(glob.glob('dataset/metric_learning/*.csv'))

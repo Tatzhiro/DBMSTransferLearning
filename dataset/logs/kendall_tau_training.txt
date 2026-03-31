@@ -1,0 +1,121 @@
+
+>>> Starting CV for Target: 88c190g_10-4-4-tpcc-nan
+    - Predicted ID: 4c6g_64-1000000-4-oltp_write_only-0.2
+    - Concordance Ratio: 74.92%
+    - Tuning TPS Ratio:  73.37%
+
+>>> Starting CV for Target: 88c190g_100-4-4-tpcc-nan
+    - Predicted ID: 12c16g_64-1000000-4-oltp_read_write_20-1.0
+    - Concordance Ratio: 75.70%
+    - Tuning TPS Ratio:  91.79%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_write_only-0.2
+    - Predicted ID: 16c24g_64-1000000-4-oltp_read_write_50-1.0
+    - Concordance Ratio: 99.09%
+    - Tuning TPS Ratio:  100.00%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_write_only-0.6
+    - Predicted ID: 4c6g_100-4-4-tpcc-nan
+    - Concordance Ratio: 88.31%
+    - Tuning TPS Ratio:  87.23%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_write_only-1.0
+    - Predicted ID: 4c6g_64-1000000-4-oltp_read_write_20-1.0
+    - Concordance Ratio: 89.46%
+    - Tuning TPS Ratio:  80.56%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_only-0.2
+    - Predicted ID: 32c64g_64-1000000-4-oltp_read_only-0.6
+    - Concordance Ratio: 99.71%
+    - Tuning TPS Ratio:  99.71%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_only-0.6
+    - Predicted ID: 4c6g_64-1000000-4-oltp_read_only-0.2
+    - Concordance Ratio: 86.98%
+    - Tuning TPS Ratio:  62.29%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_only-1.0
+    - Predicted ID: 12c16g_64-1000000-4-oltp_read_only-0.6
+    - Concordance Ratio: 95.24%
+    - Tuning TPS Ratio:  99.52%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_5-0.2
+    - Predicted ID: 8c12g_64-1000000-4-oltp_read_write_5-0.6
+    - Concordance Ratio: 74.45%
+    - Tuning TPS Ratio:  85.35%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_5-0.6
+    - Predicted ID: 8c12g_64-1000000-4-oltp_read_write_5-0.2
+    - Concordance Ratio: 80.02%
+    - Tuning TPS Ratio:  99.24%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_5-1.0
+    - Predicted ID: 24c32g_64-1000000-4-oltp_read_write_20-1.0
+    - Concordance Ratio: 87.78%
+    - Tuning TPS Ratio:  100.00%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_20-0.2
+    - Predicted ID: 12c16g_64-1000000-4-oltp_read_write_20-0.6
+    - Concordance Ratio: 87.69%
+    - Tuning TPS Ratio:  98.15%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_20-0.6
+    - Predicted ID: 12c16g_64-1000000-4-oltp_read_write_20-0.2
+    - Concordance Ratio: 89.49%
+    - Tuning TPS Ratio:  100.00%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_20-1.0
+    - Predicted ID: 24c32g_64-1000000-4-oltp_read_write_5-0.6
+    - Concordance Ratio: 75.76%
+    - Tuning TPS Ratio:  95.20%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_50-0.2
+    - Predicted ID: 12c16g_64-1000000-4-oltp_read_write_50-0.6
+    - Concordance Ratio: 92.97%
+    - Tuning TPS Ratio:  98.53%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_50-0.6
+    - Predicted ID: 8c12g_64-1000000-4-oltp_read_write_50-0.2
+    - Concordance Ratio: 86.98%
+    - Tuning TPS Ratio:  100.00%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_50-1.0
+    - Predicted ID: 12c16g_64-1000000-4-oltp_write_only-0.6
+    - Concordance Ratio: 95.39%
+    - Tuning TPS Ratio:  74.66%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_80-0.2
+    - Predicted ID: 8c12g_64-1000000-4-oltp_read_write_80-0.6
+    - Concordance Ratio: 90.38%
+    - Tuning TPS Ratio:  85.58%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_80-0.6
+    - Predicted ID: 12c16g_64-1000000-4-oltp_read_write_80-0.2
+    - Concordance Ratio: 91.35%
+    - Tuning TPS Ratio:  86.34%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_80-1.0
+    - Predicted ID: 8c12g_64-1000000-4-oltp_read_write_95-1.0
+    - Concordance Ratio: 98.49%
+    - Tuning TPS Ratio:  100.00%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_95-0.2
+    - Predicted ID: 4c6g_64-1000000-4-oltp_read_write_95-0.6
+    - Concordance Ratio: 87.96%
+    - Tuning TPS Ratio:  68.00%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_95-0.6
+    - Predicted ID: 4c6g_64-1000000-4-oltp_read_write_95-0.2
+    - Concordance Ratio: 83.50%
+    - Tuning TPS Ratio:  73.88%
+
+>>> Starting CV for Target: 88c190g_64-1000000-4-oltp_read_write_95-1.0
+    - Predicted ID: 32c64g_64-1000000-4-oltp_read_write_95-0.6
+    - Concordance Ratio: 100.00%
+    - Tuning TPS Ratio:  89.71%
+
+========================================
+CROSS VALIDATION COMPLETE
+Average Concordance Score: 88.33%
+Average Tuning TPS Ratio:  89.09%
+========================================

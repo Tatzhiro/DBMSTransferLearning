@@ -12,7 +12,7 @@ import json
 import random
 from scipy.stats import entropy
 
-from regression.utils import read_data_csv
+from regression.utils import read_data_csv, filter_default_config
 from regression.context_retrieval import StaticContextRetrieval, Context, ContextSimilarity
 
 
@@ -270,10 +270,11 @@ class ParameterImportanceRetrieval(StaticContextRetrieval):
     def get_sample(self, target_data_path, workload_label):
         target_df = pd.read_csv(target_data_path)
         target_df = target_df[target_df['workload_label'] == workload_label]
+        target_df = filter_default_config(target_df, self.system)
 
-        if len(target_df) < 2:
-            raise ValueError("Not enough rows after filtering on default param values.")
-        return target_df.iloc[[1]]
+        if len(target_df) == 0:
+            raise ValueError("No rows match default configuration for the given workload.")
+        return target_df.iloc[[0]]
 
 
     def _prepare_target_data(self, target_data_path, workload_label):
@@ -347,6 +348,7 @@ class ParameterImportanceRetrieval(StaticContextRetrieval):
                 if wl == workload_label and "workload" in self.excluding_factors:
                     continue
                 subset = df[df['workload_label'] == wl]
+                subset = filter_default_config(subset, self.system)
                 if 'label' not in subset.columns or len(subset) == 0:
                     continue
 

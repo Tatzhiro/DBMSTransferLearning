@@ -56,5 +56,18 @@ def read_data_csv(filename: str, system: SystemConfiguration, workload: str):
     return df
 
 
+def filter_default_config(df: pd.DataFrame, system: SystemConfiguration) -> pd.DataFrame:
+    """Filter DataFrame to rows where all DBMS parameters match default configuration values."""
+    defaults = system.get_default_param_values()
+    param_cols = [p for p in defaults if p in df.columns]
+    if not param_cols:
+        return df
+    processed = system.preprocess_param_values(df.copy())
+    mask = pd.Series(True, index=df.index)
+    for param in param_cols:
+        mask &= (processed[param] == defaults[param])
+    return df[mask]
+
+
 def epsilon_greedy(epsilon) -> bool:
     return np.random.uniform() < epsilon
