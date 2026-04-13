@@ -10,7 +10,7 @@ FILES = [
 ]
 
 METRICS = [
-    'tps', 'Average Memory Usage Percentage', 'InnoDB Buffer Pool Cache Hit Rate',
+    'Average Memory Usage Percentage', 'InnoDB Buffer Pool Cache Hit Rate',
     'InnoDB Dirty Buffer Pages', 'Current QPS (Queries Per Second)',
     'Max CPU Usage (100 - Idle)', 'InnoDB Rows Deleted (60s Rate)',
     'InnoDB Rows Inserted (60s Rate)', 'InnoDB Rows Read (60s Rate)',
@@ -60,7 +60,7 @@ def generate_triplets_kendall(context_ids, context_defaults_scaled, tps_pivot, k
                     triplets.append([anchor_id, context_ids[p_idx], context_ids[n_idx]] + anchor_vec + pos_vec + neg_vec)
     return triplets
 
-def generate_triplets_concordance_csv(context_ids, context_defaults_scaled, ranking_path='concordance_ranking.csv', k=5):
+def generate_triplets_concordance_csv(context_ids, context_defaults_scaled, ranking_path='concordant_pair_ranking.csv', k=5):
     """Generates triplets using precalculated Concordant Ranking Pairs from CSV."""
     ranking_df = pd.read_csv(ranking_path)
     triplets = []
@@ -132,15 +132,21 @@ def main():
     # output_name = 'full_triplet_data_kendall.csv'
     
     # Choice B: Precalculated Concordance CSV
-    # triplets_list = generate_triplets_concordance_csv(context_ids, context_defaults_scaled, k=5)
-    # output_name = 'full_triplet_data_concordance.csv'
+    triplets_list = generate_triplets_concordance_csv(context_ids, context_defaults_scaled, k=5)
+    output_name = 'full_triplet_data_concordance.csv'
 
     # Choice C: Precalculated Tuning Transfer CSV
-    triplets_list = generate_triplets_transfer_csv(context_ids, context_defaults_scaled, k=5)
-    output_name = 'full_triplet_data_transfer.csv'
+    # triplets_list = generate_triplets_transfer_csv(context_ids, context_defaults_scaled, k=5)
+    # output_name = 'full_triplet_data_transfer.csv'
     # ------------------
 
-    # 3. Save Output
+    # 3. Save context default metrics (unscaled, with context_id)
+    context_metrics_out = context_defaults.copy()
+    context_metrics_out.index.name = 'context_id'
+    context_metrics_out.to_csv('context_default_metrics_all.csv')
+    print(f"Saved context default metrics ({len(context_metrics_out)} contexts) to context_default_metrics_all.csv")
+
+    # 4. Save triplet output
     id_cols = ['anchor_id', 'pos_id', 'neg_id']
     vec_cols = [f'anchor_{m}' for m in METRICS] + [f'pos_{m}' for m in METRICS] + [f'neg_{m}' for m in METRICS]
     pd.DataFrame(triplets_list, columns=id_cols + vec_cols).to_csv(output_name, index=False)
